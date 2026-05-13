@@ -192,7 +192,7 @@
 
   /* ── NAV ── */
   nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    position: absolute; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center;
     padding: 28px 52px;
   }
@@ -2136,6 +2136,184 @@
     #mob-menu-btn     { display: none !important; }
     #mob-menu-overlay { display: none !important; }
   }
+
+  /* ══ DESKTOP FULLSCREEN MENU (після hero) ══ */
+
+  /* Кнопка-бургер на десктопі — з'являється після hero */
+  #desk-menu-btn {
+    position: fixed;
+    top: 28px; right: 52px;
+    z-index: 500;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.13);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease, background 0.2s;
+  }
+  #desk-menu-btn .bar {
+    position: absolute;
+    width: 18px; height: 1.5px;
+    background: #fff; border-radius: 2px;
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.25s;
+  }
+  #desk-menu-btn .bar:nth-child(1) { transform: translateY(-5px); }
+  #desk-menu-btn .bar:nth-child(3) { transform: translateY(5px); }
+  #desk-menu-btn.open .bar:nth-child(1) { transform: rotate(45deg); }
+  #desk-menu-btn.open .bar:nth-child(2) { opacity:0; transform:scaleX(0); }
+  #desk-menu-btn.open .bar:nth-child(3) { transform: rotate(-45deg); }
+  body.scrolled-past-hero #desk-menu-btn {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Повноекранне меню — займає весь екран */
+  #desk-menu-overlay {
+    position: fixed; inset: 0; z-index: 490;
+    display: grid;
+    grid-template-columns: 62fr 38fr;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  #desk-menu-overlay.open { opacity: 1; pointer-events: all; }
+
+  /* Ліва панель — фото */
+  #desk-menu-photos {
+    position: relative;
+    overflow: hidden;
+    background: #0a0a0a;
+  }
+  .desk-menu-photo {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(.4,0,.2,1),
+                transform 0.6s cubic-bezier(.4,0,.2,1);
+    transform: scale(1.04);
+    filter: brightness(0.7) contrast(1.05);
+  }
+  .desk-menu-photo.active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  /* Grain overlay на фото */
+  #desk-menu-photos::after {
+    content: '';
+    position: absolute; inset: 0; z-index: 2;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='ng'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23ng)'/%3E%3C/svg%3E");
+    background-size: 180px;
+    mix-blend-mode: overlay; opacity: 0.15; pointer-events: none;
+  }
+  /* Номер фото — декоративний */
+  .desk-photo-num {
+    position: absolute;
+    bottom: 40px; left: 48px;
+    z-index: 3;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.35em;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+  }
+
+  /* Права панель — навігація */
+  #desk-menu-nav {
+    background: rgba(6,6,8,0.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    display: flex; flex-direction: column;
+    justify-content: center;
+    padding: 80px 72px;
+    position: relative;
+  }
+  /* Червона лінія зверху */
+  #desk-menu-nav::before {
+    content: '';
+    position: absolute; top: 0; left: 72px;
+    width: 48px; height: 2px; background: #C0392B;
+  }
+
+  .desk-menu-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.5em;
+    color: rgba(255,255,255,0.25); text-transform: uppercase;
+    margin-bottom: 56px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .desk-menu-label::before { content:''; width:28px; height:1px; background:#C0392B; }
+
+  .desk-menu-links { list-style: none; }
+  .desk-menu-links li { overflow: hidden; }
+  .desk-menu-links li + li { margin-top: 4px; }
+
+  .desk-menu-links a {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(32px, 3.2vw, 52px);
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    letter-spacing: 0.01em;
+    transition: color 0.3s ease;
+    /* анімація появи */
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 0.45s ease, transform 0.45s ease, color 0.25s ease;
+  }
+  .desk-menu-links li:first-child a { border-top: 1px solid rgba(255,255,255,0.06); }
+  .desk-menu-links a .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-style: normal;
+    letter-spacing: 0.3em;
+    color: rgba(192,57,43,0);
+    transition: color 0.25s;
+    align-self: center;
+  }
+  .desk-menu-links a:hover,
+  .desk-menu-links a.active-link {
+    color: rgba(255,255,255,0.95);
+  }
+  .desk-menu-links a:hover .num,
+  .desk-menu-links a.active-link .num { color: #C0392B; }
+
+  #desk-menu-overlay.open .desk-menu-links a {
+    opacity: 1; transform: translateY(0);
+  }
+  #desk-menu-overlay.open .desk-menu-links li:nth-child(1) a { transition-delay: 0.06s; }
+  #desk-menu-overlay.open .desk-menu-links li:nth-child(2) a { transition-delay: 0.12s; }
+  #desk-menu-overlay.open .desk-menu-links li:nth-child(3) a { transition-delay: 0.18s; }
+  #desk-menu-overlay.open .desk-menu-links li:nth-child(4) a { transition-delay: 0.24s; }
+  #desk-menu-overlay.open .desk-menu-links li:nth-child(5) a { transition-delay: 0.30s; }
+
+  /* Соціальні мережі внизу */
+  .desk-menu-socials {
+    margin-top: 56px;
+    display: flex; gap: 32px;
+    opacity: 0;
+    transition: opacity 0.4s 0.35s ease;
+  }
+  #desk-menu-overlay.open .desk-menu-socials { opacity: 1; }
+  .desk-menu-socials a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.35em;
+    color: rgba(255,255,255,0.28);
+    text-decoration: none; text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .desk-menu-socials a:hover { color: rgba(255,255,255,0.7); }
+
+  /* На мобілці — ховаємо десктопну кнопку */
+  @media (max-width: 768px) {
+    #desk-menu-btn     { display: none !important; }
+    #desk-menu-overlay { display: none !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -2157,9 +2335,7 @@
     <li><a href="#method">Послуги <span class="arr">→</span></a></li>
     <li><a href="#contacts">Контакти <span class="arr">→</span></a></li>
   </ul>
-  <a href="#contacts" class="mob-menu-cta">
-    <span class="nav-dot"></span>Зв'язатись
-  </a>
+
 </div>
 
 <!-- NAV -->
@@ -2175,6 +2351,46 @@
     Зв'язатись
   </a>
 </nav>
+
+<!-- ── DESKTOP: бургер після hero ── -->
+<button id="desk-menu-btn" aria-label="Меню">
+  <span class="bar"></span>
+  <span class="bar"></span>
+  <span class="bar"></span>
+</button>
+
+<!-- ── DESKTOP: fullscreen меню ── -->
+<div id="desk-menu-overlay">
+
+  <!-- ЛІВО: фото -->
+  <div id="desk-menu-photos">
+    <div class="desk-menu-photo active" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/menu-1.jpg')"></div>
+    <div class="desk-menu-photo"        style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/menu-2.png')"></div>
+    <div class="desk-menu-photo"        style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/menu-3.png')"></div>
+    <div class="desk-menu-photo"        style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/menu-4.jpg')"></div>
+    <div class="desk-menu-photo"        style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/menu-5.jpg')"></div>
+    <div class="desk-photo-num" id="desk-photo-num">01 / 05</div>
+  </div>
+
+  <!-- ПРАВО: навігація -->
+  <div id="desk-menu-nav">
+    <div class="desk-menu-label">навігація</div>
+    <ul class="desk-menu-links">
+      <li><a href="#hero"             data-idx="0">Головна    <span class="num">01</span></a></li>
+      <li><a href="#about"            data-idx="1">Про мене   <span class="num">02</span></a></li>
+      <li><a href="#portfolio-scroll" data-idx="2">Портфоліо  <span class="num">03</span></a></li>
+      <li><a href="#method"           data-idx="3">Послуги    <span class="num">04</span></a></li>
+      <li><a href="#contacts"         data-idx="4">Контакти   <span class="num">05</span></a></li>
+    </ul>
+    <div class="desk-menu-socials">
+      <a href="#" target="_blank">Instagram</a>
+      <a href="#" target="_blank">Facebook</a>
+      <a href="#" target="_blank">Telegram</a>
+    </div>
+  </div>
+
+</div>
+
 
 <div class="hero" id="hero">
 
@@ -3597,5 +3813,66 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
   overlay.addEventListener('touchend',function(e){if(ty-e.changedTouches[0].clientY>60)close();},{passive:true});
 })();
 </script>
+
+<script>
+/* ── DESKTOP MENU ── */
+(function(){
+  var btn     = document.getElementById('desk-menu-btn');
+  var overlay = document.getElementById('desk-menu-overlay');
+  if(!btn || !overlay) return;
+
+  var photos  = Array.from(overlay.querySelectorAll('.desk-menu-photo'));
+  var links   = Array.from(overlay.querySelectorAll('.desk-menu-links a'));
+  var numEl   = document.getElementById('desk-photo-num');
+  var currentPhoto = 0;
+
+  function showPhoto(idx){
+    if(idx === currentPhoto) return;
+    photos[currentPhoto].classList.remove('active');
+    photos[idx].classList.add('active');
+    currentPhoto = idx;
+    if(numEl) numEl.textContent = String(idx+1).padStart(2,'0') + ' / 0' + photos.length;
+  }
+
+  // Hover → міняємо фото
+  links.forEach(function(a){
+    a.addEventListener('mouseenter', function(){
+      var idx = parseInt(a.dataset.idx) || 0;
+      showPhoto(idx);
+      links.forEach(function(l){ l.classList.remove('active-link'); });
+      a.classList.add('active-link');
+    });
+  });
+
+  function openMenu(){
+    btn.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // Підсвічуємо перший пункт
+    if(links[0]) { links[0].classList.add('active-link'); showPhoto(0); }
+  }
+  function closeMenu(){
+    btn.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    links.forEach(function(l){ l.classList.remove('active-link'); });
+  }
+
+  btn.addEventListener('click', function(){
+    overlay.classList.contains('open') ? closeMenu() : openMenu();
+  });
+
+  // Клік на посилання — закрити і перейти
+  links.forEach(function(a){
+    a.addEventListener('click', closeMenu);
+  });
+
+  // ESC закриває
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && overlay.classList.contains('open')) closeMenu();
+  });
+})();
+</script>
+
 </body>
 </html>
