@@ -1121,12 +1121,6 @@
     opacity: 0;
     transition: opacity 0.6s ease;
   }
-  @media (max-width: 768px) {
-    #portfolio-intro {
-      justify-content: flex-start;
-      padding: 100px 6vw 0;
-    }
-  }
   .pt-intro-label {
     font-family: 'JetBrains Mono', monospace; font-size: 10px;
     letter-spacing: 0.45em; color: rgba(192,57,43,0.8); text-transform: uppercase;
@@ -3124,25 +3118,22 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
     var vw = window.innerWidth;
     var vh = window.innerHeight;
 
-    var baseW = 1440; // базовий десктоп
+    // Десктопний «базовий» viewport по горизонталі
+    var baseW = 1440;
+    // Масштаб — але обмежуємо щоб картки не були мікроскопічними
     var scaleX = vw / baseW;
-
-    // На мобілці вертикаль масштабуємо тільки по X (не по висоті viewport)
-    // щоб картки не ставали надто приплюсненими
-    var scaleY = isMobile() ? scaleX : Math.min(scaleX * 1.1, vh / 760);
-
-    // Базовий відступ зверху для карток на мобілці — щоб не злипались з хедером
-    var mobileTopOffset = isMobile() ? Math.round(vh * 0.18) : 0;
+    // По вертикалі — масштабуємо відносно висоти viewport, але не сильніше ніж scaleX
+    var scaleY = Math.min(scaleX * 1.1, vh / 760);
 
     cards.forEach(function(card, i){
       var d = originalCardData[i];
       var newLeft   = Math.round(d.left   * scaleX);
-      var newTop    = Math.round(d.top    * scaleY) + mobileTopOffset;
+      var newTop    = Math.round(d.top    * scaleY);
       var newWidth  = Math.round(d.width  * scaleX);
       var newHeight = Math.round(d.height * scaleY);
 
-      // Мінімальна висота на мобілці
-      if(isMobile()) newHeight = Math.max(newHeight, Math.round(vh * 0.3));
+      // Мінімальна висота щоб картки були видимі
+      if(isMobile()) newHeight = Math.max(newHeight, Math.round(vh * 0.28));
 
       card.style.left   = newLeft   + 'px';
       card.style.top    = newTop    + 'px';
@@ -3156,9 +3147,7 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
     rescaleCards(); // спочатку перераховуємо картки
     var trackW = getTrackWidth();
     track.style.width = trackW + 'px';
-    // На мобілці зменшуємо запас знизу — картки компактніші
-    var bottomPad = isMobile() ? 0 : 200;
-    var needed = window.innerHeight + Math.max(0, trackW - window.innerWidth) + bottomPad;
+    var needed = window.innerHeight + Math.max(0, trackW - window.innerWidth) + 200;
     scrollEl.style.height = needed + 'px';
   }
   window.addEventListener('resize', updateScrollHeight);
