@@ -1252,11 +1252,30 @@
   .plb-meta-item + .plb-meta-item::before { content: '·'; position: absolute; left: 0; color: rgba(192,57,43,0.5); }
   .plb-meta-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 18px; color: rgba(255,255,255,0.65); margin-left: auto; letter-spacing: 0.02em; }
   @media (max-width: 768px) {
-    #portfolio-scroll { height: auto; }
-    #portfolio-sticky { position: relative; height: auto; overflow: visible; }
-    #portfolio-track { position: relative; flex-direction: column; height: auto; gap: 12px; padding: 120px 20px 80px; transform: none !important; }
-    .pt-card { opacity: 1 !important; transform: none !important; width: 100% !important; height: 260px !important; margin-right: 0 !important; margin-left: 0 !important; }
-    #portfolio-hint, #portfolio-progress { display: none; }
+    #portfolio-scroll { height: auto !important; }
+    #portfolio-sticky { position: relative !important; height: auto !important; overflow: visible !important; }
+    #portfolio-track {
+      position: relative !important;
+      display: flex !important;
+      flex-direction: column !important;
+      width: 100% !important;
+      height: auto !important;
+      gap: 12px !important;
+      padding: 120px 20px 80px !important;
+      transform: none !important;
+    }
+    .pt-card {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      opacity: 1 !important;
+      transform: none !important;
+      width: 100% !important;
+      height: 260px !important;
+      margin-right: 0 !important;
+      margin-left: 0 !important;
+    }
+    #portfolio-hint, #portfolio-progress { display: none !important; }
     #portfolio-header { padding: 60px 20px 0; }
     #plb-meta { padding: 16px 20px; flex-wrap: wrap; }
     .plb-meta-title { display: none; }
@@ -3098,8 +3117,20 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
 
   if(!scrollEl || !track) return;
 
+  // ── Перевірка мобільного режиму ──
+  function isMobile(){
+    return window.innerWidth <= 768;
+  }
+
   // ── Динамічно коригуємо висоту секції та ширину треку ──
   function updateScrollHeight(){
+    if(isMobile()){
+      // На мобілці — скидаємо inline-стилі, CSS медіа-запит керує всім
+      scrollEl.style.height = '';
+      track.style.width = '';
+      track.style.transform = '';
+      return;
+    }
     var trackW = getTrackWidth();
     track.style.width = trackW + 'px';
     var needed = window.innerHeight + Math.max(0, trackW - window.innerWidth) + 200;
@@ -3126,6 +3157,7 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
   var targetX  = 0;
 
   function onScroll(){
+    if(isMobile()) return;
     var rect = scrollEl.getBoundingClientRect();
     var scrollable = scrollEl.offsetHeight - window.innerHeight;
     if(scrollable <= 0) return;
