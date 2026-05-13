@@ -1258,11 +1258,19 @@
   .plb-meta-item + .plb-meta-item::before { content: '·'; position: absolute; left: 0; color: rgba(192,57,43,0.5); }
   .plb-meta-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 18px; color: rgba(255,255,255,0.65); margin-left: auto; letter-spacing: 0.02em; }
   @media (max-width: 768px) {
-    /* Горизонтальний scroll-driven залишається активним на мобілці
-       JS сам перераховує координати карток під маленький екран */
-    #portfolio-header { padding: 40px 20px 0; }
-    #portfolio-hint { bottom: 20px; font-size: 8px; letter-spacing: 0.3em; }
-    .pt-intro-heading { font-size: clamp(26px, 7.5vw, 44px) !important; max-width: 92vw; }
+    /* МОБІЛКА: двоколонковий вертикальний layout замість горизонтального */
+    #portfolio-scroll  { height: auto !important; }
+    #portfolio-sticky  {
+      position: relative !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    #portfolio-track   { overflow: visible !important; }
+    #portfolio-header  { padding: 40px 20px 0; position: relative; }
+    #portfolio-hint    { display: none; }
+    .pt-intro-heading  { font-size: clamp(26px, 7.5vw, 44px) !important; max-width: 92vw; }
+    /* Картки — absolute всередині треку (JS задає координати) */
+    .pt-card { transition: opacity 0.7s ease, transform 0.7s ease !important; }
     #plb-meta { padding: 16px 20px; flex-wrap: wrap; }
     .plb-meta-title { display: none; }
   }
@@ -3123,42 +3131,98 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
   function rescaleCards(){
     var vw = window.innerWidth;
     var vh = window.innerHeight;
-
-    var baseW = 1440; // базовий десктоп
+    var baseW = 1440;
     var scaleX = vw / baseW;
 
-    // На мобілці вертикаль масштабуємо тільки по X (не по висоті viewport)
-    // щоб картки не ставали надто приплюсненими
-    var scaleY = isMobile() ? scaleX : Math.min(scaleX * 1.1, vh / 760);
+    if(!isMobile()){
+      // ── ДЕСКТОП: звичайний пропорційний масштаб ──
+      var scaleY = Math.min(scaleX * 1.1, vh / 760);
+      cards.forEach(function(card, i){
+        var d = originalCardData[i];
+        card.style.left   = Math.round(d.left   * scaleX) + 'px';
+        card.style.top    = Math.round(d.top    * scaleY) + 'px';
+        card.style.width  = Math.round(d.width  * scaleX) + 'px';
+        card.style.height = Math.round(d.height * scaleY) + 'px';
+      });
+      return;
+    }
 
-    // Базовий відступ зверху для карток на мобілці — щоб не злипались з хедером
-    var mobileTopOffset = isMobile() ? Math.round(vh * 0.18) : 0;
+    // ── МОБІЛКА: двоколонковий стек без перетинань ──
+    // Ширина екрану ділиться на дві колонки з відступом між ними
+    var gap      = 10;                          // між колонками
+    var padH     = 14;                          // відступ від країв
+    var colW     = Math.round((vw - padH*2 - gap) / 2); // ширина однієї колонки
+    var topStart = Math.round(vh * 0.17);       // відступ зверху (під хедер + трохи)
 
-    cards.forEach(function(card, i){
-      var d = originalCardData[i];
-      var newLeft   = Math.round(d.left   * scaleX);
-      var newTop    = Math.round(d.top    * scaleY) + mobileTopOffset;
-      var newWidth  = Math.round(d.width  * scaleX);
-      var newHeight = Math.round(d.height * scaleY);
+    // Розподіляємо картки по колонках — зберігаємо ліво/право з десктопу
+    // Картки з десктопним left < 50% baseW → ліва колонка; інші → права
+    // Але зберігаємо порядок «зліва-направо» по горизонталі як і на десктопі
+    // Сортуємо по originalCardData.left щоб порядок появи зліва-направо зберігся
+    var sorted = cards.map(function(card, i){
+      return { card: card, d: originalCardData[i], origIdx: i };
+    }).sort(function(a, b){ return a.d.left - b.d.left; });
 
-      // Мінімальна висота на мобілці
-      if(isMobile()) newHeight = Math.max(newHeight, Math.round(vh * 0.3));
+    // Визначаємо колонку для кожної картки: чергуємо ліво/право
+    // але зміщуємо праву колонку вниз на ~40% висоти першої картки — класичний masonry-ефект
+    var leftColY  = topStart;
+    var rightColY = topStart + Math.round(vh * 0.12); // права стартує нижче — хаос збережено
 
-      card.style.left   = newLeft   + 'px';
-      card.style.top    = newTop    + 'px';
-      card.style.width  = newWidth  + 'px';
-      card.style.height = newHeight + 'px';
+    sorted.forEach(function(item){
+      var card = item.card;
+      var d    = item.d;
+
+      // Визначаємо аспект оригінальної картки
+      var aspect = d.height / d.width;
+      var cardH  = Math.round(colW * aspect);
+      // Обмеження: не менше 30vh і не більше 65vh
+      cardH = Math.max(cardH, Math.round(vh * 0.30));
+      cardH = Math.min(cardH, Math.round(vh * 0.65));
+
+      // Вибираємо колонку — та що вище (менший Y) отримує наступну картку
+      var useLeft = (leftColY <= rightColY);
+      var colX    = useLeft ? padH : (padH + colW + gap);
+      var colY    = useLeft ? leftColY : rightColY;
+
+      card.style.left   = colX  + 'px';
+      card.style.top    = colY  + 'px';
+      card.style.width  = colW  + 'px';
+      card.style.height = cardH + 'px';
+
+      // Оновлюємо поточну висоту колонки
+      var nextY = colY + cardH + gap;
+      if(useLeft) leftColY  = nextY;
+      else        rightColY = nextY;
     });
   }
 
   // ── Динамічно коригуємо висоту секції та ширину треку ──
   function updateScrollHeight(){
     rescaleCards(); // спочатку перераховуємо картки
+
+    if(isMobile()){
+      // На мобілці — двоколонковий вертикальний layout
+      // Висота секції = висота найвищої колонки + відступ знизу
+      var maxBottom = 0;
+      cards.forEach(function(c){
+        var bottom = (parseInt(c.style.top)||0) + (parseInt(c.style.height)||0);
+        if(bottom > maxBottom) maxBottom = bottom;
+      });
+      // Трек — тільки ширина екрану (немає горизонтального скролу)
+      track.style.width = window.innerWidth + 'px';
+      // Висота sticky-контейнера = висота всього контенту карток + відступ
+      sticky.style.height = (maxBottom + 60) + 'px';
+      // Висота секції = висота sticky (щоб сторінка нормально скролилась)
+      scrollEl.style.height = (maxBottom + 60) + 'px';
+      // Трек — скидаємо transform
+      track.style.transform = 'translateX(0)';
+      return;
+    }
+
+    // ── ДЕСКТОП: горизонтальний scroll-driven ──
+    sticky.style.height = '';
     var trackW = getTrackWidth();
     track.style.width = trackW + 'px';
-    // На мобілці зменшуємо запас знизу — картки компактніші
-    var bottomPad = isMobile() ? 0 : 200;
-    var needed = window.innerHeight + Math.max(0, trackW - window.innerWidth) + bottomPad;
+    var needed = window.innerHeight + Math.max(0, trackW - window.innerWidth) + 200;
     scrollEl.style.height = needed + 'px';
   }
   window.addEventListener('resize', updateScrollHeight);
@@ -3183,10 +3247,38 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
   function onScroll(){
     var rect = scrollEl.getBoundingClientRect();
     var scrollable = scrollEl.offsetHeight - window.innerHeight;
-    if(scrollable <= 0) return;
 
     var scrolled = -rect.top;
     if(scrolled < 0) scrolled = 0;
+
+    // ── МОБІЛКА: тільки intro-анімація, без горизонтального руху ──
+    if(isMobile()){
+      if(introEl){
+        var mobileEntry = Math.min(1, scrolled / (window.innerHeight * 0.4));
+        if(scrolled <= 0){
+          introEl.style.transition = 'opacity 0.6s ease';
+          introEl.style.opacity = '1';
+          introEl.style.transform = 'translateY(0)';
+        } else if(mobileEntry < 1){
+          introEl.style.transition = 'none';
+          introEl.style.opacity = Math.max(0, 1 - mobileEntry * 2.5);
+          introEl.style.transform = 'translateY(' + -(scrolled * 0.5) + 'px)';
+        } else {
+          introEl.style.opacity = '0';
+          introEl.style.transform = 'translateY(-100vh)';
+        }
+      }
+      // Reveal карток при скролі вниз
+      cards.forEach(function(card){
+        var cardTop = parseInt(card.style.top) || 0;
+        var triggerY = cardTop - window.innerHeight * 0.85;
+        if(scrolled > triggerY) card.classList.add('visible');
+      });
+      return;
+    }
+
+    // ── ДЕСКТОП: горизонтальний scroll-driven ──
+    if(scrollable <= 0) return;
     if(scrolled > scrollable) scrolled = scrollable;
 
     var ratio = scrolled / scrollable;
@@ -3195,14 +3287,10 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
     var maxShift = trackW - window.innerWidth;
     if(maxShift < 0) maxShift = 0;
 
-    // При ratio=0 трек зсунутий на +window.innerWidth (все за правим краєм)
-    // При ratio=1 трек зсунутий на -maxShift (все прокручено вліво)
-    // Плавний перехід від +vw → -maxShift
-    var entryShift = window.innerWidth * 0.85; // скільки пікселів "въезду" зверху
-    // На мобілці intro тримається довше — перші 50vh замість 30vh
-    var entryWindow = isMobile() ? (window.innerHeight * 0.5) : (window.innerHeight * 0.3);
-    var entryRatio = Math.min(1, scrolled / entryWindow); // вхід в секцію
-    var slideIn    = entryShift * (1 - entryRatio); // 0 коли вже "въехали"
+    var entryShift = window.innerWidth * 0.85;
+    var entryWindow = window.innerHeight * 0.3;
+    var entryRatio = Math.min(1, scrolled / entryWindow);
+    var slideIn    = entryShift * (1 - entryRatio);
 
     targetX = -(ratio * maxShift) + slideIn;
 
