@@ -2043,9 +2043,124 @@
     .fm-header { padding: 24px; }
     .fm-footer { padding: 20px 24px 24px; }
   }
+
+  /* ══ MOBILE NAV ══ */
+  @media (max-width: 768px) {
+    nav { display: none !important; }
+    .hero-logo { display: none !important; }
+
+    #mob-menu-btn {
+      position: fixed;
+      top: 20px; right: 20px;
+      z-index: 1000;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.13);
+    }
+    #mob-menu-btn .bar {
+      position: absolute;
+      width: 18px; height: 1.5px;
+      background: #fff; border-radius: 2px;
+      transition: transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.25s;
+    }
+    #mob-menu-btn .bar:nth-child(1) { transform: translateY(-5px); }
+    #mob-menu-btn .bar:nth-child(3) { transform: translateY(5px); }
+    #mob-menu-btn.open .bar:nth-child(1) { transform: rotate(45deg); }
+    #mob-menu-btn.open .bar:nth-child(2) { opacity:0; transform:scaleX(0); }
+    #mob-menu-btn.open .bar:nth-child(3) { transform: rotate(-45deg); }
+
+    #mob-menu-overlay {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(6,6,8,0.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 0 10vw;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s cubic-bezier(.4,0,.2,1);
+    }
+    #mob-menu-overlay::before {
+      content: '';
+      position: absolute; top: 0; left: 10vw;
+      width: 40px; height: 2px; background: #C0392B;
+    }
+    #mob-menu-overlay.open { opacity: 1; pointer-events: all; }
+
+    .mob-menu-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; letter-spacing: 0.45em;
+      color: rgba(255,255,255,0.28); text-transform: uppercase;
+      margin-bottom: 44px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .mob-menu-label::before { content:''; width:24px; height:1px; background:#C0392B; }
+
+    .mob-menu-links { list-style: none; }
+    .mob-menu-links li { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .mob-menu-links li:first-child { border-top: 1px solid rgba(255,255,255,0.06); }
+    .mob-menu-links a {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 0;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: clamp(28px, 8vw, 40px);
+      color: rgba(255,255,255,0.85); text-decoration: none;
+      opacity: 0; transform: translateY(14px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .mob-menu-links a .arr { font-family:'Montserrat',sans-serif; font-size:13px; font-style:normal; color:rgba(192,57,43,0.6); }
+    #mob-menu-overlay.open .mob-menu-links a { opacity:1; transform:translateY(0); }
+    #mob-menu-overlay.open .mob-menu-links li:nth-child(1) a { transition-delay:.05s; }
+    #mob-menu-overlay.open .mob-menu-links li:nth-child(2) a { transition-delay:.10s; }
+    #mob-menu-overlay.open .mob-menu-links li:nth-child(3) a { transition-delay:.15s; }
+    #mob-menu-overlay.open .mob-menu-links li:nth-child(4) a { transition-delay:.20s; }
+    #mob-menu-overlay.open .mob-menu-links li:nth-child(5) a { transition-delay:.25s; }
+
+    .mob-menu-cta {
+      margin-top: 40px;
+      display: inline-flex; align-items: center; gap: 12px;
+      font-family:'Montserrat',sans-serif; font-size:11px;
+      letter-spacing:.28em; color:rgba(255,255,255,0.45);
+      text-decoration:none; text-transform:uppercase;
+      opacity:0; transition: opacity 0.4s 0.3s ease;
+    }
+    #mob-menu-overlay.open .mob-menu-cta { opacity:1; }
+  }
+
+  @media (min-width: 769px) {
+    #mob-menu-btn     { display: none !important; }
+    #mob-menu-overlay { display: none !important; }
+  }
 </style>
 </head>
 <body>
+
+<!-- ── MOBILE: бургер-кнопка ── -->
+<button id="mob-menu-btn" aria-label="Меню">
+  <span class="bar"></span>
+  <span class="bar"></span>
+  <span class="bar"></span>
+</button>
+
+<!-- ── MOBILE: повноекранне меню ── -->
+<div id="mob-menu-overlay">
+  <div class="mob-menu-label">навігація</div>
+  <ul class="mob-menu-links">
+    <li><a href="#hero">Головна <span class="arr">→</span></a></li>
+    <li><a href="#about">Про мене <span class="arr">→</span></a></li>
+    <li><a href="#portfolio-scroll">Портфоліо <span class="arr">→</span></a></li>
+    <li><a href="#method">Послуги <span class="arr">→</span></a></li>
+    <li><a href="#contacts">Контакти <span class="arr">→</span></a></li>
+  </ul>
+  <a href="#contacts" class="mob-menu-cta">
+    <span class="nav-dot"></span>Зв'язатись
+  </a>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -3467,5 +3582,20 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
 })();
 </script>
 
+
+<script>
+(function(){
+  var btn = document.getElementById('mob-menu-btn');
+  var overlay = document.getElementById('mob-menu-overlay');
+  if(!btn || !overlay) return;
+  function open(){ btn.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow='hidden'; }
+  function close(){ btn.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow=''; }
+  btn.addEventListener('click', function(){ overlay.classList.contains('open') ? close() : open(); });
+  overlay.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', close); });
+  var ty=0;
+  overlay.addEventListener('touchstart',function(e){ty=e.touches[0].clientY;},{passive:true});
+  overlay.addEventListener('touchend',function(e){if(ty-e.changedTouches[0].clientY>60)close();},{passive:true});
+})();
+</script>
 </body>
 </html>
