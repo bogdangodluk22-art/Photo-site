@@ -1252,31 +1252,11 @@
   .plb-meta-item + .plb-meta-item::before { content: '·'; position: absolute; left: 0; color: rgba(192,57,43,0.5); }
   .plb-meta-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 18px; color: rgba(255,255,255,0.65); margin-left: auto; letter-spacing: 0.02em; }
   @media (max-width: 768px) {
-    #portfolio-scroll { height: auto !important; }
-    #portfolio-sticky { position: relative !important; height: auto !important; overflow: visible !important; }
-    #portfolio-track {
-      position: relative !important;
-      display: flex !important;
-      flex-direction: column !important;
-      width: 100% !important;
-      height: auto !important;
-      gap: 12px !important;
-      padding: 120px 20px 80px !important;
-      transform: none !important;
-    }
-    .pt-card {
-      position: relative !important;
-      left: auto !important;
-      top: auto !important;
-      opacity: 1 !important;
-      transform: none !important;
-      width: 100% !important;
-      height: 260px !important;
-      margin-right: 0 !important;
-      margin-left: 0 !important;
-    }
-    #portfolio-hint, #portfolio-progress { display: none !important; }
-    #portfolio-header { padding: 60px 20px 0; }
+    /* Горизонтальний scroll-driven залишається активним на мобілці
+       JS сам перераховує координати карток під маленький екран */
+    #portfolio-header { padding: 40px 20px 0; }
+    #portfolio-hint { bottom: 20px; font-size: 8px; letter-spacing: 0.3em; }
+    .pt-intro-heading { font-size: clamp(26px, 7.5vw, 44px) !important; max-width: 92vw; }
     #plb-meta { padding: 16px 20px; flex-wrap: wrap; }
     .plb-meta-title { display: none; }
   }
@@ -3117,29 +3097,62 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
 
   if(!scrollEl || !track) return;
 
-  // ── Перевірка мобільного режиму ──
+  // ── Мобільний режим ──
   function isMobile(){
     return window.innerWidth <= 768;
   }
 
+  // Оригінальні координати карток (десктоп, ~1440px viewport)
+  // Зберігаємо один раз при старті
+  var originalCardData = cards.map(function(card){
+    return {
+      left:   parseInt(card.style.left)   || 0,
+      top:    parseInt(card.style.top)    || 0,
+      width:  parseInt(card.style.width)  || 300,
+      height: parseInt(card.style.height) || 400
+    };
+  });
+
+  // Перераховуємо координати карток під поточний viewport
+  function rescaleCards(){
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+
+    // Десктопний «базовий» viewport по горизонталі
+    var baseW = 1440;
+    // Масштаб — але обмежуємо щоб картки не були мікроскопічними
+    var scaleX = vw / baseW;
+    // По вертикалі — масштабуємо відносно висоти viewport, але не сильніше ніж scaleX
+    var scaleY = Math.min(scaleX * 1.1, vh / 760);
+
+    cards.forEach(function(card, i){
+      var d = originalCardData[i];
+      var newLeft   = Math.round(d.left   * scaleX);
+      var newTop    = Math.round(d.top    * scaleY);
+      var newWidth  = Math.round(d.width  * scaleX);
+      var newHeight = Math.round(d.height * scaleY);
+
+      // Мінімальна висота щоб картки були видимі
+      if(isMobile()) newHeight = Math.max(newHeight, Math.round(vh * 0.28));
+
+      card.style.left   = newLeft   + 'px';
+      card.style.top    = newTop    + 'px';
+      card.style.width  = newWidth  + 'px';
+      card.style.height = newHeight + 'px';
+    });
+  }
+
   // ── Динамічно коригуємо висоту секції та ширину треку ──
   function updateScrollHeight(){
-    if(isMobile()){
-      // На мобілці — скидаємо inline-стилі, CSS медіа-запит керує всім
-      scrollEl.style.height = '';
-      track.style.width = '';
-      track.style.transform = '';
-      return;
-    }
+    rescaleCards(); // спочатку перераховуємо картки
     var trackW = getTrackWidth();
     track.style.width = trackW + 'px';
     var needed = window.innerHeight + Math.max(0, trackW - window.innerWidth) + 200;
     scrollEl.style.height = needed + 'px';
   }
   window.addEventListener('resize', updateScrollHeight);
-  // Запустимо після завантаження зображень
   window.addEventListener('load', updateScrollHeight);
-  setTimeout(updateScrollHeight, 500);
+  setTimeout(updateScrollHeight, 300);
 
   // ── Розраховуємо загальну ширину треку (по абсолютних позиціях) ──
   function getTrackWidth(){
@@ -3157,7 +3170,6 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
   var targetX  = 0;
 
   function onScroll(){
-    if(isMobile()) return;
     var rect = scrollEl.getBoundingClientRect();
     var scrollable = scrollEl.offsetHeight - window.innerHeight;
     if(scrollable <= 0) return;
@@ -3176,7 +3188,9 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
     // При ratio=1 трек зсунутий на -maxShift (все прокручено вліво)
     // Плавний перехід від +vw → -maxShift
     var entryShift = window.innerWidth * 0.85; // скільки пікселів "въезду" зверху
-    var entryRatio = Math.min(1, scrolled / (window.innerHeight * 0.3)); // перші 30vh — вьезд
+    // На мобілці intro тримається довше — перші 50vh замість 30vh
+    var entryWindow = isMobile() ? (window.innerHeight * 0.5) : (window.innerHeight * 0.3);
+    var entryRatio = Math.min(1, scrolled / entryWindow); // вхід в секцію
     var slideIn    = entryShift * (1 - entryRatio); // 0 коли вже "въехали"
 
     targetX = -(ratio * maxShift) + slideIn;
@@ -3246,6 +3260,11 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
 
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll(); // ініціальний стан
+
+  // На мобілці — hint "свайп вниз" бо саме вертикальний скрол керує горизонтальним рухом
+  if(hint && isMobile()){
+    hint.textContent = 'скролити вниз';
+  }
 
   // Показуємо intro-текст коли секція входить у viewport (один раз)
   var introShown = false;
