@@ -1,0 +1,3409 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Bebas+Neue&family=Montserrat:wght@200;300&family=Playfair+Display:ital,wght@1,400;1,500&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; width: 100vw; min-height: 100vh; overflow-x: hidden; }
+
+  .hero { position: relative; width: 100vw; height: 100vh; }
+
+  .bg-slide {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    opacity: 0; transition: opacity 1.2s ease-in-out;
+  }
+  .bg-slide.active { opacity: 1; }
+
+  .bg-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 1;
+  }
+
+  .camera-wrap {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    padding-bottom: 80px;
+    transition: opacity 0.5s ease;
+  }
+  .camera-wrap.hidden { opacity: 0; pointer-events: none; }
+
+  .camera-container {
+    position: relative;
+    width: min(520px, 80vw);
+  }
+
+  .camera-img {
+    width: 100%; display: block;
+    position: relative; z-index: 2;
+  }
+
+  .lcd-screen {
+    position: absolute;
+    z-index: 3; overflow: hidden; border-radius: 8px;
+    top: 45%; left: 22%; width: 37%; height: 25%;
+  }
+  .lcd-slide {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    opacity: 0; transition: opacity 1.2s ease-in-out;
+    filter: brightness(0.8) contrast(1.05) saturate(0.9);
+  }
+  .lcd-slide.active { opacity: 1; }
+  .lcd-screen::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, transparent 55%);
+    z-index: 10; pointer-events: none; border-radius: 8px;
+  }
+  .lcd-screen::before {
+    content: ''; position: absolute; inset: 0;
+    box-shadow: inset 0 0 12px 4px rgba(0,0,0,0.7);
+    z-index: 11; pointer-events: none;
+  }
+
+  /* ── FILM STRIP ── */
+  .film-strip {
+    position: absolute; bottom: 24px; left: 0; width: 100%;
+    z-index: 10; overflow: hidden; display: flex; flex-direction: column;
+    transition: opacity 0.5s ease;
+  }
+  .film-strip.hidden { opacity: 0; pointer-events: none; }
+
+  .sprockets { display: flex; height: 14px; background: #111; align-items: center; padding: 0 4px; }
+  .sprocket-hole { width: 18px; height: 10px; background: #000; border-radius: 2px; margin-right: 28px; flex-shrink: 0; }
+  .film-track { background: #111; padding: 4px 0; overflow: hidden; }
+  .film-inner {
+    display: flex; gap: 6px;
+    animation: filmScroll 220s linear infinite;
+    width: max-content;
+  }
+  .film-inner.paused { animation-play-state: paused; }
+  .film-frame {
+    width: 120px; height: 80px; flex-shrink: 0;
+    background-size: cover; background-position: center;
+    border-radius: 2px; filter: brightness(0.7) saturate(0.8);
+    border: 1px solid #222; transition: filter 0.3s; cursor: pointer;
+  }
+  .film-frame:hover { filter: brightness(1) saturate(1); }
+
+  @keyframes filmScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ── INTERACTIVE BUTTONS ── */
+  .cam-btn {
+    position: absolute;
+    width: 20px; height: 20px;
+    z-index: 20;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+  }
+
+  /* Smaller pulsing rings */
+  .cam-btn .pulse-ring {
+    position: absolute;
+    inset: -3px;          /* was -6px */
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.55);   /* thinner */
+    animation: pulseRing 2.2s ease-out infinite;
+  }
+  .cam-btn .pulse-ring:nth-child(2) { animation-delay: 0.7s; }
+
+  .cam-btn .plus {
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 13px; font-weight: 300;  /* slightly smaller */
+    opacity: 0.8;
+    text-shadow: 0 0 6px rgba(0,0,0,0.8);
+    transition: transform 0.2s, opacity 0.2s;
+  }
+  .cam-btn:hover .plus { transform: scale(1.25); opacity: 1; }
+
+  /* Tooltip */
+  .cam-btn .tip {
+    position: absolute;
+    left: 50%; top: -26px; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: #fff;
+    font: 11px/1 monospace; padding: 4px 8px;
+    border-radius: 4px; white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .cam-btn:hover .tip { opacity: 1; }
+
+  @keyframes pulseRing {
+    0%   { transform: scale(0.85); opacity: 0.75; }
+    65%  { transform: scale(1.3);  opacity: 0; }    /* was 1.4 */
+    100% { opacity: 0; }
+  }
+
+  /* ── FULLSCREEN PHOTO ── */
+  #fullscreen-photo {
+    position: fixed; inset: 0; z-index: 50;
+    background: #000;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  #fullscreen-photo.active { opacity: 1; pointer-events: all; }
+  #fullscreen-photo img, #fs-img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+  }
+  #fs-close {
+    position: absolute; top: 20px; right: 28px;
+    color: white; font-size: 32px; cursor: pointer;
+    opacity: 0.7; transition: opacity 0.2s;
+    z-index: 51;
+  }
+  #fs-close:hover { opacity: 1; }
+  #fullscreen-close {
+    display: none;
+  }
+
+  /* ── RESTORE CAMERA ICON ── */
+  #restore-btn {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 30; cursor: pointer;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s;
+  }
+  #restore-btn.active { opacity: 1; pointer-events: all; }
+  #restore-btn svg { filter: drop-shadow(0 0 12px rgba(255,255,255,0.3)); }
+  #restore-btn:hover svg { filter: drop-shadow(0 0 20px rgba(255,255,255,0.6)); }
+
+  /* ── ZOOMED BG ── */
+  .bg-slide { transform-origin: center; transition: opacity 1.2s ease-in-out, transform 0.6s ease; }
+  .bg-slide.zoomed { transform: scale(1.5); }
+
+  /* ── MAX MODE ── */
+  #max-overlay {
+    position: fixed; inset: 0; z-index: 0;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center;
+    padding: 28px 52px;
+  }
+  nav .nav-links {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* ── HERO LOGO — тільки в hero, не рухається ── */
+  .hero-logo {
+    position: absolute;
+    top: 28px; left: 52px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .nav-logo-box {
+    position: relative;
+    padding: 6px 10px;
+    display: inline-flex; align-items: center;
+  }
+  .nav-logo-box::before, .nav-logo-box::after,
+  .nav-logo-box .c::before, .nav-logo-box .c::after {
+    content: '';
+    position: absolute;
+    width: 9px; height: 9px;
+    border-color: #e63030;
+    border-style: solid;
+    animation: redPulse 2s ease-in-out infinite;
+  }
+  .nav-logo-box::before  { top:0; left:0;  border-width: 2px 0 0 2px; }
+  .nav-logo-box::after   { top:0; right:0; border-width: 2px 2px 0 0; }
+  .nav-logo-box .c::before { bottom:0; left:0;  border-width: 0 0 2px 2px; }
+  .nav-logo-box .c::after  { bottom:0; right:0; border-width: 0 2px 2px 0; }
+
+  @keyframes redPulse {
+    0%, 100% { border-color: #e63030; opacity: 1; }
+    50%       { border-color: #ff6060; opacity: 0.4; }
+  }
+
+  .nav-logo-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px; font-weight: 400; letter-spacing: 0.2em;
+    color: #ffffff; text-transform: uppercase;
+  }
+
+  .nav-links {
+    display: flex; gap: 64px; list-style: none;
+  }
+  .nav-links a {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px; font-weight: 300; letter-spacing: 0.22em;
+    color: rgba(255,255,255,0.85); text-decoration: none; text-transform: uppercase;
+    transition: color 0.25s;
+  }
+  .nav-links a:hover { color: #ffffff; }
+
+  .nav-cta {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px; font-weight: 300; letter-spacing: 0.22em;
+    color: #ffffff; text-decoration: none; text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #e63030;
+    animation: redDotBlink 2.2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes redDotBlink {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px #e63030; }
+    50%       { opacity: 0.3; box-shadow: none; }
+  }
+  /* ── HERO TITLE ── */
+  .hero-title-wrap {
+    position: absolute;
+    top: 23.4%;
+    left: 0; right: 0;
+    z-index: 1;
+    text-align: center;
+    pointer-events: none;
+  }
+  .hero-title {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: clamp(20px, 2.8vw, 44px);
+    letter-spacing: 0.08em;
+    line-height: 1;
+    white-space: nowrap;
+    text-transform: uppercase;
+    background: linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #c0c0c0 55%,
+      #808080 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-intro {
+    position: absolute;
+    bottom: 220px;
+    left: 48px;
+    z-index: 1;
+    max-width: 340px;
+    pointer-events: none;
+  }
+  .hero-intro-label {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 200;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .hero-intro-text {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(16px, 1.6vw, 22px);
+    line-height: 1.55;
+    color: rgba(255,255,255,0.92);
+    text-shadow: 0 2px 20px rgba(0,0,0,0.8);
+  }
+  .hero-timer {
+    position: absolute;
+    bottom: 160px;
+    right: 48px;
+    z-index: 10;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 200;
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.9);
+    pointer-events: none;
+  }
+
+  /* ── HERO fixed height ── */
+  .hero { height: 100vh; }
+
+  /* ══════════════════════════════════════════
+     02 · ПРО МЕНЕ — Cinematic Editorial
+  ══════════════════════════════════════════ */
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@300;400&display=swap');
+
+  #about {
+    position: relative;
+    background: #0A0A0A;
+    overflow: hidden;
+    padding: 60px 0 160px;
+    min-height: 100vh;
+  }
+
+  /* ── ambient atmospheric backdrop ── */
+  #about::before {
+    content: '';
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 25% 35%, rgba(192,57,43,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 85% 70%, rgba(255,255,255,0.025) 0%, transparent 55%),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: auto, auto, 180px;
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  /* ── decorative red marker line top-left ── */
+  #about::after {
+    content: '';
+    position: absolute;
+    top: 100px; left: 80px;
+    width: 56px; height: 1px;
+    background: #C0392B;
+    z-index: 3;
+    opacity: 0.7;
+  }
+
+  .about-inner {
+    position: relative; z-index: 2;
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 80px;
+  }
+
+  /* ── section header ── */
+  .about-section-head {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 72px;
+    margin-left: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .about-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 400;
+    letter-spacing: 0.35em;
+    color: #ffffff;
+    text-transform: uppercase;
+    opacity: 1;
+    position: relative;
+    z-index: 10;
+    text-shadow: 0 0 20px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,1);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .about-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 40px; height: 1px;
+    background: #C0392B;
+    flex-shrink: 0;
+  }
+  .about-eyebrow span.num {
+    color: #C0392B;
+  }
+  .about-eyebrow-label { display: none; }
+
+  /* ══════ MAIN LAYOUT ══════ */
+  .about-main {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 0;
+    align-items: stretch;
+  }
+
+  /* ── LEFT: large photo with fade mask ── */
+  .about-photo-wrap {
+    position: relative;
+    min-height: 720px;
+    overflow: visible;
+  }
+
+  .about-photo {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 720px;
+    background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/tetianahykal.jpg');
+    background-size: cover;
+    background-position: center 20%;
+    /* Soft radial mask: solid in upper-left, fades to transparent on right and bottom edges */
+    -webkit-mask-image: radial-gradient(ellipse 130% 130% at 25% 35%, #000 35%, rgba(0,0,0,0.85) 55%, transparent 95%);
+    mask-image: radial-gradient(ellipse 130% 130% at 25% 35%, #000 35%, rgba(0,0,0,0.85) 55%, transparent 95%);
+    filter: contrast(1.06) brightness(0.92);
+  }
+
+  /* subtle film grain on photo */
+  .about-photo::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n2)' opacity='0.5'/%3E%3C/svg%3E");
+    background-size: 150px;
+    mix-blend-mode: overlay;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  /* ── photo meta tags (timecode + coords on photo) ── */
+  .photo-meta-top {
+    position: absolute;
+    top: 24px; left: 24px;
+    z-index: 5;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .photo-meta-top span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 300;
+    letter-spacing: 0.22em;
+    color: rgba(255,255,255,0.55);
+    text-transform: uppercase;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+
+  .photo-meta-bottom {
+    position: absolute;
+    bottom: 32px; left: 24px;
+    z-index: 5;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .photo-meta-bottom .meta-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px; font-weight: 300;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+  }
+  .photo-meta-bottom .meta-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 400;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.72);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  }
+
+  /* ── photo signature (cinematic frame ID) ── */
+  .photo-frame-id {
+    position: absolute;
+    top: 24px; right: 24px;
+    z-index: 5;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 300;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.5);
+    text-align: right;
+    line-height: 1.6;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+  .photo-frame-id .rec-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #C0392B;
+    margin-right: 6px;
+    vertical-align: middle;
+    animation: recBlink 1.8s ease-in-out infinite;
+  }
+  @keyframes recBlink {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px #C0392B; }
+    50% { opacity: 0.35; box-shadow: none; }
+  }
+
+  /* ── RIGHT: content panel ── */
+  .about-content {
+    position: relative;
+    z-index: 3;
+    padding: 60px 0 60px 24px;
+    margin-left: -120px; /* overlap with photo */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* warm vignette behind content to lift text from dark bg */
+  .about-content::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -40px; right: -40px; bottom: 0;
+    background: radial-gradient(ellipse at 60% 50%, rgba(20,20,22,0.65) 0%, rgba(10,10,10,0.4) 50%, transparent 80%);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* ─── Block A: Facts (table-card) ─── */
+  .about-facts-card {
+    background: linear-gradient(135deg, rgba(28,28,30,0.55) 0%, rgba(18,18,20,0.4) 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 2px;
+    padding: 32px 36px 28px;
+    margin-bottom: 56px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.5);
+    position: relative;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s 0.1s ease, transform 0.8s 0.1s ease;
+  }
+  .about-facts-card::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 0;
+    width: 60px; height: 2px;
+    background: #C0392B;
+  }
+
+  .facts-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 0.35em;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    margin-bottom: 22px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .facts-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, rgba(255,255,255,0.15), transparent);
+  }
+
+  .fact-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .fact-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .fact-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 0.22em;
+    color: rgba(255,255,255,0.42);
+    text-transform: uppercase;
+  }
+  .fact-val {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px; font-weight: 300;
+    letter-spacing: 0.04em;
+    color: #F5F0EB;
+    line-height: 1.5;
+  }
+
+  /* ─── Block B: Quote (hero treatment) ─── */
+  .about-quote-block {
+    position: relative;
+    margin-bottom: 64px;
+    padding: 0 0 0 36px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.9s 0.3s ease, transform 0.9s 0.3s ease;
+  }
+  .about-quote-block::before {
+    content: '"';
+    position: absolute;
+    top: -38px; left: -8px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 110px;
+    line-height: 1;
+    color: #C0392B;
+    opacity: 0.35;
+  }
+  .about-quote-block::after {
+    content: '';
+    position: absolute;
+    top: 14px; bottom: 50px;
+    left: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #C0392B 0%, rgba(192,57,43,0.2) 100%);
+  }
+  .about-quote-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(22px, 2.1vw, 30px);
+    line-height: 1.45;
+    color: #F5F0EB;
+    letter-spacing: 0.005em;
+  }
+  .about-quote-text em {
+    font-weight: 600;
+    color: #ffffff;
+    font-style: italic;
+  }
+  .about-quote-author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 22px;
+  }
+  .about-quote-author::before {
+    content: '';
+    width: 28px;
+    height: 1px;
+    background: rgba(192,57,43,0.7);
+  }
+  .about-quote-author span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 400;
+    letter-spacing: 0.3em;
+    color: rgba(245,240,235,0.7);
+    text-transform: uppercase;
+  }
+
+  /* ─── Block C: Values (4 cards) ─── */
+  .values-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 0.35em;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0;
+    transition: opacity 0.7s 0.5s ease;
+  }
+  .values-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, rgba(255,255,255,0.15), transparent);
+  }
+
+  .about-values {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .value-card {
+    position: relative;
+    background: linear-gradient(160deg, rgba(28,28,30,0.6) 0%, rgba(18,18,20,0.4) 100%);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 2px;
+    padding: 24px 22px 22px;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.35s, background 0.35s, transform 0.35s;
+  }
+  .value-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 1px;
+    background: linear-gradient(to right, #C0392B 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .value-card:hover {
+    background: linear-gradient(160deg, rgba(38,38,42,0.7) 0%, rgba(22,22,24,0.5) 100%);
+    border-color: rgba(192,57,43,0.35);
+    transform: translateY(-2px);
+  }
+  .value-card:hover::before { opacity: 1; }
+  .value-card.in:hover { transform: translateY(-2px) !important; }
+
+  .value-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 0.2em;
+    color: #C0392B;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .value-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px; font-weight: 400;
+    letter-spacing: 0.3em;
+    color: #F5F0EB;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .value-desc {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11.5px; font-weight: 300;
+    line-height: 1.6;
+    color: rgba(245,240,235,0.6);
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 1100px) {
+    .about-main { grid-template-columns: 1fr; }
+    .about-photo-wrap { min-height: 520px; margin-bottom: 0; }
+    .about-photo { min-height: 520px; -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%); }
+    .about-content { margin-left: 0; padding: 40px 0 0; }
+    .about-section-head { margin-left: 0; }
+  }
+  @media (max-width: 720px) {
+    #about { padding: 100px 0 120px; }
+    .about-inner { padding: 0 28px; }
+    .about-section-head { margin-left: 0; margin-bottom: 56px; }
+    .about-facts-card { padding: 24px 20px; }
+    .fact-row { grid-template-columns: 100px 1fr; }
+    .about-values { grid-template-columns: 1fr; }
+  }
+
+  /* ── scroll-reveal trigger ── */
+  .reveal.in { opacity: 1 !important; transform: translateY(0) !important; }
+
+  /* ══════════════════════════════════════════
+     CAM-BTN visibility tied to hero
+  ══════════════════════════════════════════ */
+  .cam-btn { transition: opacity 0.35s ease; }
+
+  /* ══════════════════════════════════════════
+     03 · МЕТОДИКА
+  ══════════════════════════════════════════ */
+  #method {
+    position: relative;
+    background: #0A0A0A;
+    overflow: hidden;
+    padding: 120px 0 140px;
+    min-height: 100vh;
+  }
+
+  /* ── Red curtain accents left + right (DGC style) ── */
+  #method::before,
+  #method::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 120px;
+    pointer-events: none;
+    z-index: 1;
+  }
+  #method::before {
+    left: 0;
+    background: linear-gradient(to right,
+      rgba(192,57,43,0.55) 0%,
+      rgba(192,57,43,0.18) 40%,
+      transparent 100%
+    );
+  }
+  #method::after {
+    right: 0;
+    background: linear-gradient(to left,
+      rgba(192,57,43,0.55) 0%,
+      rgba(192,57,43,0.18) 40%,
+      transparent 100%
+    );
+  }
+
+  /* Film grain overlay */
+  #method .method-grain {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='ng'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23ng)'/%3E%3C/svg%3E");
+    background-size: 180px;
+    opacity: 0.04;
+    mix-blend-mode: screen;
+  }
+
+  .method-inner {
+    position: relative; z-index: 5;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 120px;
+  }
+
+  /* ── Section header ── */
+  .method-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 400;
+    letter-spacing: 0.4em;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 56px;
+    opacity: 0; transform: translateY(16px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .method-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 40px; height: 1px;
+    background: #C0392B;
+    flex-shrink: 0;
+  }
+  .method-eyebrow span.num { color: #C0392B; }
+
+  /* ── Big intro headline ── */
+  .method-headline {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(36px, 4.2vw, 68px);
+    line-height: 1.18;
+    color: #F5F0EB;
+    letter-spacing: 0.01em;
+    max-width: 820px;
+    margin-bottom: 28px;
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.9s 0.1s ease, transform 0.9s 0.1s ease;
+  }
+  .method-headline em {
+    color: #C0392B;
+    font-style: italic;
+  }
+
+  /* ── Pills / Tags row ── */
+  .method-tags {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 88px;
+    opacity: 0; transform: translateY(16px);
+    transition: opacity 0.8s 0.2s ease, transform 0.8s 0.2s ease;
+  }
+  .method-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 0.22em;
+    color: rgba(245,240,235,0.6);
+    text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 2px;
+    padding: 8px 16px;
+    transition: border-color 0.3s, color 0.3s;
+  }
+  .method-tag:hover {
+    border-color: rgba(192,57,43,0.5);
+    color: rgba(245,240,235,0.9);
+  }
+
+  /* ── Two method cards ── */
+  .method-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 80px;
+  }
+
+  .method-card {
+    position: relative;
+    background: linear-gradient(160deg, rgba(20,20,22,0.9) 0%, rgba(14,14,16,0.85) 100%);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 2px;
+    padding: 44px 40px 40px;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease, border-color 0.35s;
+  }
+  .method-card:hover {
+    border-color: rgba(192,57,43,0.35);
+  }
+  .method-card:hover .method-card-num {
+    opacity: 0.25;
+  }
+
+  /* big ghost number background */
+  .method-card-num {
+    position: absolute;
+    top: -10px; right: 28px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 140px; font-weight: 400;
+    line-height: 1;
+    color: #C0392B;
+    opacity: 0.08;
+    pointer-events: none;
+    transition: opacity 0.35s;
+    user-select: none;
+    letter-spacing: -0.02em;
+  }
+
+  /* red top accent line */
+  .method-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    height: 2px; width: 60px;
+    background: #C0392B;
+  }
+
+  .method-card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 0.35em;
+    color: #C0392B;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .method-card-label::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: rgba(192,57,43,0.25);
+  }
+
+  .method-card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 2.8vw, 40px);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: #F5F0EB;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+
+  .method-card-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 300;
+    letter-spacing: 0.2em;
+    color: rgba(245,240,235,0.45);
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .method-card-price::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .method-card-desc {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px; font-weight: 300;
+    line-height: 1.72;
+    color: rgba(245,240,235,0.65);
+    letter-spacing: 0.02em;
+    margin-bottom: 32px;
+  }
+
+  .method-card-cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 400;
+    letter-spacing: 0.3em;
+    color: #F5F0EB;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(192,57,43,0.5);
+    padding-bottom: 4px;
+    transition: color 0.25s, border-color 0.25s;
+  }
+  .method-card-cta:hover {
+    color: #C0392B;
+    border-color: #C0392B;
+  }
+  .method-card-cta-arrow {
+    display: inline-block;
+    transition: transform 0.25s;
+  }
+  .method-card-cta:hover .method-card-cta-arrow {
+    transform: translateX(4px);
+  }
+
+  /* ── "Для кого" block ── */
+  .method-audience {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 60px;
+    align-items: start;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 60px;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 0.8s 0.4s ease, transform 0.8s 0.4s ease;
+  }
+
+  .method-audience-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 0.35em;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    line-height: 1.6;
+  }
+  .method-audience-label strong {
+    display: block;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(22px, 2vw, 30px);
+    font-weight: 400;
+    color: #F5F0EB;
+    letter-spacing: 0.01em;
+    margin-top: 10px;
+    line-height: 1.3;
+  }
+
+  .method-audience-list {
+    list-style: none;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .method-audience-list li {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px; font-weight: 300;
+    line-height: 1.6;
+    color: rgba(245,240,235,0.65);
+    letter-spacing: 0.02em;
+    padding-left: 20px;
+    position: relative;
+  }
+  .method-audience-list li::before {
+    content: '—';
+    position: absolute; left: 0;
+    color: #C0392B;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  /* Responsive method */
+  @media (max-width: 1100px) {
+    .method-inner { padding: 0 60px; }
+    .method-cards { grid-template-columns: 1fr; gap: 16px; }
+    .method-audience { grid-template-columns: 1fr; gap: 32px; }
+  }
+  @media (max-width: 720px) {
+    #method { padding: 100px 0 120px; }
+    .method-inner { padding: 0 28px; }
+    #method::before, #method::after { width: 60px; }
+    .method-headline { font-size: clamp(28px, 8vw, 44px); }
+    .method-card { padding: 32px 24px 28px; }
+  }
+
+  /* ══════════════════════════════════════════
+     04 · ПОРТФОЛІО
+  ══════════════════════════════════════════ */
+  /* ══════════════════════════════════════════
+     04 · ПОРТФОЛІО — scroll-driven horizontal
+  ══════════════════════════════════════════ */
+  #portfolio-scroll {
+    position: relative;
+    height: calc(100vh + 6000px);
+    background: #0A0A0A;
+    padding-bottom: 120px;
+  }
+  #portfolio-scroll::before {
+    content: ''; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 25% 35%, rgba(192,57,43,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 85% 70%, rgba(255,255,255,0.025) 0%, transparent 55%),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: auto, auto, 180px;
+    opacity: 1;
+    pointer-events: none;
+  }
+  #portfolio-sticky {
+    position: sticky; top: 0; height: 100vh; overflow: hidden; z-index: 2;
+  }
+  #portfolio-header {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    padding: 60px 80px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 20px;
+    transition: opacity 0.5s;
+  }
+  #portfolio-header.faded { opacity: 0; pointer-events: none; }
+
+  /* ── Portfolio intro text (з'являється до скролу, ховається вгору) ── */
+  #portfolio-intro {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 3;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 10vw; pointer-events: none;
+    will-change: transform, opacity;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  .pt-intro-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.45em; color: rgba(192,57,43,0.8); text-transform: uppercase;
+    margin-bottom: 32px; display: flex; align-items: center; gap: 14px;
+  }
+  .pt-intro-label::before { content:''; width:32px; height:1px; background:#C0392B; }
+  .pt-intro-heading {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 400;
+    font-size: clamp(46px, 6.5vw, 108px); line-height: 1.06;
+    color: #F5F0EB; max-width: 80vw;
+  }
+  .pt-intro-heading em { font-weight: 600; color: #fff; font-style: italic; }
+  .pt-intro-heading .accent { color: rgba(192,57,43,0.9); }
+  .pt-intro-sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.35em; color: rgba(255,255,255,0.28); text-transform: uppercase;
+    margin-top: 40px; display: flex; align-items: center; gap: 16px;
+  }
+  .pt-intro-sub::before { content:''; width:24px; height:1px; background:rgba(255,255,255,0.18); }
+  .portfolio-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 400; letter-spacing: 0.38em;
+    color: rgba(255,255,255,0.75); text-transform: uppercase;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .portfolio-eyebrow::before {
+    content: ''; display: inline-block; width: 32px; height: 1px;
+    background: #C0392B; flex-shrink: 0;
+  }
+  .portfolio-eyebrow .num { color: #C0392B; }
+  #portfolio-counter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 300; letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.4);
+  }
+  #portfolio-hint {
+    position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+    z-index: 10;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 300; letter-spacing: 0.45em;
+    color: rgba(255,255,255,0.28); text-transform: uppercase;
+    display: flex; align-items: center; gap: 14px;
+    animation: hintPulse 2.2s ease-in-out infinite;
+    transition: opacity 0.5s;
+  }
+  #portfolio-hint.hidden { opacity: 0; }
+  #portfolio-hint::before, #portfolio-hint::after {
+    content: ''; display: block; width: 32px; height: 1px; background: rgba(255,255,255,0.18);
+  }
+  @keyframes hintPulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+  #portfolio-progress {
+    display: none;
+  }
+  #portfolio-track {
+    position: absolute; top: 0; left: 0;
+    width: max-content; height: 100%;
+    will-change: transform;
+  }
+  /* Кожна карта — абсолютна, розкидана по полотну */
+  .pt-card {
+    position: absolute; overflow: hidden; cursor: pointer;
+    /* Початковий стан: зсунута вправо і вниз — невидима */
+    opacity: 0;
+    transform: translate(120px, 60px) scale(0.92);
+    transition: none;
+  }
+  .pt-card.visible {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+    transition:
+      opacity 0.9s cubic-bezier(0.22,1,0.36,1),
+      transform 0.9s cubic-bezier(0.22,1,0.36,1);
+  }
+  .pt-card-photo {
+    width: 100%; height: 100%;
+    background-size: cover; background-position: center;
+    transition: transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94), filter 0.5s;
+    filter: brightness(0.82) contrast(1.06);
+  }
+  .pt-card:hover .pt-card-photo { transform: scale(1.05); filter: brightness(0.9) contrast(1.06); }
+  .pt-card::before {
+    content: ''; position: absolute; inset: 0; z-index: 2;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='ptgr'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23ptgr)'/%3E%3C/svg%3E");
+    background-size: 160px; mix-blend-mode: overlay; opacity: 0; transition: opacity 0.4s; pointer-events: none;
+  }
+  .pt-card:hover::before { opacity: 0.2; }
+  .pt-card::after {
+    content: ''; position: absolute; inset: 0; z-index: 3;
+    background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 55%);
+    opacity: 0; transition: opacity 0.4s; pointer-events: none;
+  }
+  .pt-card:hover::after { opacity: 1; }
+  .pt-card-info {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 5;
+    padding: 26px 28px 24px;
+    transform: translateY(10px); opacity: 0;
+    transition: opacity 0.35s, transform 0.35s; pointer-events: none;
+  }
+  .pt-card:hover .pt-card-info { opacity: 1; transform: translateY(0); }
+  .pt-series {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 400;
+    letter-spacing: 0.3em; color: rgba(255,255,255,0.5); text-transform: uppercase;
+    margin-bottom: 6px; display: block;
+  }
+  .pt-title {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: clamp(16px,1.6vw,22px); font-weight: 400; color: #F5F0EB;
+    line-height: 1.2; display: block;
+  }
+  .pt-card-accent {
+    position: absolute; top: 0; left: 0;
+    width: 2px; height: 44px; background: #C0392B; z-index: 6;
+  }
+  /* Lightbox */
+  #portfolio-lb { position: fixed; inset: 0; z-index: 200; background: rgba(4,4,4,0.97); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+  #portfolio-lb.active { opacity: 1; pointer-events: all; }
+  #plb-img-wrap { max-width: 88vw; max-height: 78vh; display: flex; align-items: center; justify-content: center; }
+  #plb-img { max-width: 88vw; max-height: 78vh; object-fit: contain; display: block; opacity: 0; transition: opacity 0.35s; }
+  #plb-img.loaded { opacity: 1; }
+  .plb-arrow { position: fixed; top: 50%; transform: translateY(-50%); z-index: 10; background: none; border: none; color: rgba(255,255,255,0.45); font-size: 26px; cursor: pointer; padding: 20px 28px; transition: color 0.2s; }
+  .plb-arrow:hover { color: #fff; }
+  #plb-prev { left: 20px; } #plb-next { right: 20px; }
+  #plb-close { position: fixed; top: 24px; right: 32px; background: none; border: none; color: rgba(255,255,255,0.5); font-size: 22px; cursor: pointer; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; transition: color 0.2s; z-index: 10; }
+  #plb-close:hover { color: #fff; }
+  #plb-counter-lb { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: 0.3em; color: rgba(255,255,255,0.3); z-index: 10; }
+  #plb-meta { position: fixed; bottom: 0; left: 0; right: 0; padding: 28px 60px; display: flex; align-items: center; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%); z-index: 10; }
+  .plb-meta-item { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: 0.22em; color: rgba(255,255,255,0.38); text-transform: uppercase; padding: 0 20px; position: relative; }
+  .plb-meta-item:first-child { padding-left: 0; }
+  .plb-meta-item + .plb-meta-item::before { content: '·'; position: absolute; left: 0; color: rgba(192,57,43,0.5); }
+  .plb-meta-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 18px; color: rgba(255,255,255,0.65); margin-left: auto; letter-spacing: 0.02em; }
+  @media (max-width: 768px) {
+    #portfolio-scroll { height: auto; }
+    #portfolio-sticky { position: relative; height: auto; overflow: visible; }
+    #portfolio-track { position: relative; flex-direction: column; height: auto; gap: 12px; padding: 120px 20px 80px; transform: none !important; }
+    .pt-card { opacity: 1 !important; transform: none !important; width: 100% !important; height: 260px !important; margin-right: 0 !important; margin-left: 0 !important; }
+    #portfolio-hint, #portfolio-progress { display: none; }
+    #portfolio-header { padding: 60px 20px 0; }
+    #plb-meta { padding: 16px 20px; flex-wrap: wrap; }
+    .plb-meta-title { display: none; }
+  }
+
+  /* ══════════════════════════════════════════
+     05 · МОЄЮ МОВОЮ — стилі точно з section_05
+  ══════════════════════════════════════════ */
+  #section-confession {
+    background: #F5F0EB;
+    position: relative;
+  }
+  #section-confession .s05-inner {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 80px;
+  }
+  /* eyebrow — такий самий як #about і #method */
+  #section-confession .portfolio-eyebrow {
+    padding-top: 80px;
+    margin-bottom: 24px;
+    color: #1A1512;
+  }
+  #section-confession .portfolio-eyebrow .num {
+    color: #C0392B;
+  }
+  /* block-light padding */
+  #section-confession .s05-block {
+    padding: 0 0 120px;
+  }
+  /* two-col-reverse: ліво цитата, право текст */
+  #section-confession .s05-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+  /* timecode */
+  #section-confession .s05-timecode {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(26,21,18,0.25);
+    letter-spacing: 0.12em;
+    margin-bottom: 24px;
+  }
+  /* pull-quote-light — точно з section_05 */
+  #section-confession .s05-pullquote {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(36px, 5vw, 58px);
+    line-height: 1.18;
+    font-weight: 300;
+    color: #1A1512;
+    letter-spacing: -0.01em;
+    position: relative;
+    padding-left: 32px;
+    margin-bottom: 32px;
+  }
+  #section-confession .s05-pullquote::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 2px;
+    background: #C0392B;
+  }
+  /* arch-tags */
+  #section-confession .s05-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 0;
+  }
+  #section-confession .s05-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border: 1px solid rgba(192,57,43,0.3);
+    color: rgba(192,57,43,0.9);
+    border-radius: 2px;
+  }
+  /* block-num */
+  #section-confession .s05-blocknum {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: rgba(192,57,43,0.7);
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  /* subhead-light — Bebas Neue */
+  #section-confession .s05-subhead {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(24px, 3vw, 38px);
+    letter-spacing: 0.06em;
+    color: #1A1512;
+    margin-bottom: 32px;
+    line-height: 1;
+  }
+  /* prose-light */
+  #section-confession .s05-prose {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 17px;
+    line-height: 1.85;
+    font-weight: 300;
+    color: rgba(26,21,18,0.65);
+  }
+  #section-confession .s05-prose p + p { margin-top: 24px; }
+
+  @media (max-width: 768px) {
+    #section-confession .s05-inner { padding: 0 24px; }
+    #section-confession .s05-two-col { grid-template-columns: 1fr; gap: 48px; }
+  }
+
+  /* ══════════════════════════════════════════
+     06 · ПОСЛУГИ
+  ══════════════════════════════════════════ */
+  #services {
+    background: #0A0A0A;
+    position: relative;
+    overflow: hidden;
+    padding: 120px 0 0;
+  }
+  /* Fullscreen video background */
+  #services-video-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.55;
+  }
+  /* Dark overlay over video so text is readable */
+  #services::after {
+    content: '';
+    position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(
+      to right,
+      rgba(10,10,10,0.82) 0%,
+      rgba(10,10,10,0.45) 50%,
+      rgba(10,10,10,0.82) 100%
+    );
+    pointer-events: none;
+  }
+  .srv-inner {
+    position: relative; z-index: 2;
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 80px;
+  }
+  .srv-eyebrow { margin-bottom: 100px; }
+
+  .srv-stage {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    min-height: 900px;
+    gap: 0;
+  }
+  .srv-card-left  { padding-right: 80px; padding-top: 0; }
+  .srv-card-right { padding-left: 80px;  padding-top: 240px; }
+
+  .srv-method-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: #C0392B; margin-bottom: 20px;
+  }
+  .srv-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(52px, 6vw, 80px);
+    line-height: 1; color: #F5F0EB;
+    letter-spacing: -0.02em; margin-bottom: 8px;
+  }
+  .srv-price-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.18em;
+    color: rgba(245,240,235,0.35); text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+  .srv-divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(to right, rgba(192,57,43,0.6), rgba(245,240,235,0.04));
+    margin-bottom: 32px;
+  }
+  .srv-includes-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: rgba(245,240,235,0.35); margin-bottom: 20px;
+  }
+  .srv-list { list-style: none; margin-bottom: 40px; }
+  .srv-list li {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px; font-weight: 300; line-height: 1.7;
+    color: rgba(245,240,235,0.72);
+    padding: 11px 0; border-bottom: 1px solid rgba(245,240,235,0.08);
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .srv-list li::before {
+    content: '—'; color: #C0392B; flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; margin-top: 2px;
+  }
+
+  /* ── CTA ── */
+  .srv-cta-wrap {
+    text-align: center; padding: 100px 0 140px;
+    position: relative; z-index: 2;
+  }
+  .srv-disclaimer {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-size: 19px;
+    color: rgba(245,240,235,0.4); margin-bottom: 40px;
+  }
+  .srv-cta-btn {
+    display: inline-block;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px; font-weight: 300;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: #F5F0EB; border: 1px solid rgba(245,240,235,0.25);
+    padding: 20px 60px; text-decoration: none;
+    transition: background 0.35s, border-color 0.35s;
+  }
+  .srv-cta-btn:hover { background: #C0392B; border-color: #C0392B; }
+
+  @media (max-width: 900px) {
+    .srv-inner { padding: 0 24px; }
+    .srv-stage { grid-template-columns: 1fr; min-height: auto; }
+    .srv-card-left { padding-right: 0; }
+    .srv-card-right { padding-top: 60px; padding-left: 0; }
+  }
+
+  /* ══════════════════════════════════════════
+     08 · КОНТАКТИ
+  ══════════════════════════════════════════ */
+  #contacts {
+    background: #F5F0EB;
+    position: relative;
+    overflow: hidden;
+  }
+  .ct-inner {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 80px 80px 120px;
+  }
+  #contacts .portfolio-eyebrow {
+    color: #1A1512;
+    margin-bottom: 80px;
+  }
+  #contacts .portfolio-eyebrow .num { color: #C0392B; }
+  #contacts .portfolio-eyebrow::before { background: #C0392B; }
+
+  /* Two-col layout */
+  .ct-stage {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    align-items: start;
+  }
+
+  /* LEFT: photo + socials */
+  .ct-left {
+    padding-right: 80px;
+    position: relative;
+  }
+  .ct-photo-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+  }
+  .ct-photo-wrap::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(to top, #F5F0EB 0%, transparent 100%);
+    z-index: 2;
+    pointer-events: none;
+  }
+  .ct-photo {
+    width: 100%;
+    aspect-ratio: 3/4;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+    filter: grayscale(15%) contrast(1.04);
+    transition: filter 0.6s;
+  }
+  .ct-photo:hover { filter: grayscale(0%) contrast(1.04); }
+
+  .ct-person {
+    margin-top: 28px;
+    position: relative; z-index: 3;
+  }
+  .ct-person-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(22px, 2.5vw, 30px);
+    color: #1A1512;
+    margin-bottom: 4px;
+  }
+  .ct-person-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(26,21,18,0.4);
+    margin-bottom: 28px;
+  }
+  .ct-socials {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .ct-social-link {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(26,21,18,0.08);
+    text-decoration: none;
+    transition: gap 0.3s;
+    color: inherit;
+  }
+  .ct-social-link:hover { gap: 22px; }
+  .ct-social-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(192,57,43,0.7);
+    width: 90px;
+    flex-shrink: 0;
+  }
+  .ct-social-value {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    color: #1A1512;
+    transition: color 0.3s;
+  }
+  .ct-social-link:hover .ct-social-value { color: #C0392B; }
+  .ct-social-arrow {
+    margin-left: auto;
+    color: rgba(192,57,43,0.5);
+    font-size: 12px;
+    transition: transform 0.3s;
+  }
+  .ct-social-link:hover .ct-social-arrow { transform: translateX(4px); }
+
+  /* RIGHT: headline + form trigger */
+  .ct-right {
+    padding-top: 40px;
+  }
+  .ct-headline {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(44px, 5.5vw, 80px);
+    line-height: 1.04;
+    color: #1A1512;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+  }
+  .ct-headline em {
+    color: #C0392B;
+    font-style: italic;
+  }
+  .ct-subheadline {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: rgba(26,21,18,0.55);
+    max-width: 440px;
+    margin-bottom: 48px;
+  }
+  .ct-how-to {
+    padding: 32px;
+    border: 1px solid rgba(26,21,18,0.1);
+    background: rgba(26,21,18,0.03);
+    margin-bottom: 40px;
+    position: relative;
+  }
+  .ct-how-to::before {
+    content: '→';
+    position: absolute;
+    top: 32px; left: 32px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: #C0392B;
+  }
+  .ct-how-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(192,57,43,0.7);
+    margin-bottom: 16px;
+    padding-left: 28px;
+  }
+  .ct-how-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    line-height: 1.8;
+    color: rgba(26,21,18,0.6);
+    padding-left: 28px;
+  }
+  .ct-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #F5F0EB;
+    background: #1A1512;
+    border: 1px solid #1A1512;
+    padding: 22px 48px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.35s, color 0.35s, border-color 0.35s;
+    margin-bottom: 20px;
+    width: 100%;
+    justify-content: center;
+  }
+  .ct-cta-btn:hover { background: #C0392B; border-color: #C0392B; }
+  .ct-cta-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .ct-disclaimer {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: rgba(26,21,18,0.4);
+    text-align: center;
+    line-height: 1.6;
+    padding: 0 8px;
+  }
+  .ct-spots { color: #C0392B; }
+
+  /* MYTH AGENCY link */
+  .ct-agency {
+    margin-top: 80px;
+    padding-top: 40px;
+    border-top: 1px solid rgba(26,21,18,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .ct-agency-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(26,21,18,0.35);
+  }
+  .ct-agency-link {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 20px;
+    color: #1A1512;
+    text-decoration: none;
+    transition: color 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ct-agency-link:hover { color: #C0392B; }
+
+  /* ── MODAL ── */
+  #form-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  #form-modal.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .fm-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,10,0.88);
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+  }
+  .fm-panel {
+    position: relative;
+    z-index: 2;
+    width: min(760px, 92vw);
+    max-height: 90vh;
+    background: #F5F0EB;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .fm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 32px 40px 28px;
+    border-bottom: 1px solid rgba(26,21,18,0.1);
+    flex-shrink: 0;
+  }
+  .fm-step-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(192,57,43,0.7);
+  }
+  .fm-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: rgba(26,21,18,0.4);
+    transition: color 0.2s;
+    padding: 4px;
+  }
+  .fm-close:hover { color: #C0392B; }
+
+  /* Progress bar */
+  .fm-progress {
+    height: 2px;
+    background: rgba(26,21,18,0.08);
+    flex-shrink: 0;
+  }
+  .fm-progress-fill {
+    height: 100%;
+    background: #C0392B;
+    transition: width 0.4s ease;
+  }
+
+  /* Step content area */
+  .fm-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 48px 40px;
+  }
+  .fm-step { display: none; }
+  .fm-step.active { display: block; }
+
+  /* Step image banner */
+  .fm-img-banner {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    object-position: center 30%;
+    display: block;
+    margin-bottom: 32px;
+    filter: grayscale(20%) brightness(0.88);
+  }
+
+  .fm-step-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(26px, 3.5vw, 40px);
+    color: #1A1512;
+    margin-bottom: 8px;
+    line-height: 1.1;
+  }
+  .fm-step-subtitle {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+    color: rgba(26,21,18,0.45);
+    margin-bottom: 36px;
+    letter-spacing: 0.02em;
+  }
+
+  .fm-field { margin-bottom: 24px; }
+  .fm-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(26,21,18,0.5);
+    display: block;
+    margin-bottom: 10px;
+  }
+  .fm-input, .fm-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(26,21,18,0.2);
+    padding: 10px 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: #1A1512;
+    outline: none;
+    transition: border-color 0.3s;
+    -webkit-appearance: none;
+    border-radius: 0;
+  }
+  .fm-input:focus, .fm-textarea:focus { border-bottom-color: #C0392B; }
+  .fm-textarea { resize: none; min-height: 90px; }
+  .fm-input::placeholder, .fm-textarea::placeholder { color: rgba(26,21,18,0.25); font-style: italic; }
+
+  /* Two-col inputs */
+  .fm-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* Checkboxes */
+  .fm-checks { display: flex; flex-direction: column; gap: 0; }
+  .fm-checks.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .fm-check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(26,21,18,0.06);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .fm-check-item:last-child { border-bottom: none; }
+  .fm-check-box {
+    width: 16px; height: 16px;
+    border: 1px solid rgba(26,21,18,0.25);
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: background 0.2s, border-color 0.2s;
+    position: relative;
+    cursor: pointer;
+  }
+  .fm-check-input { display: none; }
+  .fm-check-input:checked + .fm-check-box {
+    background: #C0392B;
+    border-color: #C0392B;
+  }
+  .fm-check-input:checked + .fm-check-box::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 5px;
+    width: 4px; height: 8px;
+    border-right: 1.5px solid #fff;
+    border-bottom: 1.5px solid #fff;
+    transform: rotate(45deg);
+  }
+  .fm-check-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(26,21,18,0.75);
+    line-height: 1.5;
+  }
+  .fm-check-sub {
+    display: block;
+    font-size: 11px;
+    color: rgba(26,21,18,0.35);
+    margin-top: 2px;
+  }
+
+  /* Group label inside checks */
+  .fm-group-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #C0392B;
+    padding: 20px 0 8px;
+    display: block;
+  }
+
+  /* Footer nav */
+  .fm-footer {
+    padding: 24px 40px 32px;
+    border-top: 1px solid rgba(26,21,18,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 16px;
+  }
+  .fm-btn-prev, .fm-btn-next {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.25s;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .fm-btn-prev { color: rgba(26,21,18,0.4); }
+  .fm-btn-prev:hover { color: #1A1512; }
+  .fm-btn-prev:disabled { opacity: 0.2; cursor: default; }
+  .fm-btn-next {
+    color: #F5F0EB;
+    background: #1A1512;
+    padding: 16px 36px;
+    border: 1px solid #1A1512;
+  }
+  .fm-btn-next:hover { background: #C0392B; border-color: #C0392B; }
+  .fm-btn-next:disabled { opacity: 0.4; cursor: default; background: #1A1512; border-color: #1A1512; }
+
+  .fm-step-dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .fm-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(26,21,18,0.15);
+    transition: background 0.3s;
+  }
+  .fm-dot.active { background: #C0392B; }
+
+  /* Success screen */
+  .fm-success {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 40px;
+    min-height: 300px;
+  }
+  .fm-success.show { display: flex; }
+  .fm-success-icon {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 60px;
+    color: #C0392B;
+    margin-bottom: 24px;
+    line-height: 1;
+  }
+  .fm-success-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 32px;
+    color: #1A1512;
+    margin-bottom: 16px;
+  }
+  .fm-success-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(26,21,18,0.55);
+    max-width: 360px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 900px) {
+    .ct-inner { padding: 60px 24px 80px; }
+    .ct-stage { grid-template-columns: 1fr; }
+    .ct-left { padding-right: 0; margin-bottom: 60px; }
+    .ct-photo-wrap { max-width: 100%; }
+    .ct-agency { flex-direction: column; gap: 16px; align-items: flex-start; }
+    .fm-row { grid-template-columns: 1fr; }
+    .fm-checks.two-col { grid-template-columns: 1fr; }
+    .fm-panel { max-height: 95vh; }
+    .fm-body { padding: 32px 24px; }
+    .fm-header { padding: 24px; }
+    .fm-footer { padding: 20px 24px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <ul class="nav-links">
+    <li><a href="#hero">Головна</a></li>
+    <li><a href="#about">Про мене</a></li>
+    <li><a href="#portfolio-scroll">Портфоліо</a></li>
+    <li><a href="#method">Послуги</a></li>
+  </ul>
+  <a href="#contacts" class="nav-cta">
+    <span class="nav-dot"></span>
+    Зв'язатись
+  </a>
+</nav>
+
+<div class="hero" id="hero">
+
+  <div class="bg-slide active" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/3.jpg')"></div>
+  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/2.png')"></div>
+  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/1.png')"></div>
+  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/4.png')"></div>
+  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/5.jpg')"></div>
+  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/6.jpg')"></div>
+  <div class="bg-overlay"></div>
+
+  <!-- Логотип ОМ — тільки в HERO, absolute -->
+  <div class="hero-logo">
+    <div class="nav-logo-box">
+      <span class="c"></span>
+      <span class="nav-logo-text">ОМ</span>
+    </div>
+  </div>
+
+  <div class="camera-wrap" id="cameraWrap">
+    <div class="camera-container">
+      <div class="lcd-screen">
+        <div class="lcd-slide active" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/3.jpg')"></div>
+        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/2.png')"></div>
+        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/1.png')"></div>
+        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/4.png')"></div>
+        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/5.jpg')"></div>
+        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/6.jpg')"></div>
+      </div>
+      <img class="camera-img" src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/camera.png" alt="Camera">
+    </div>
+  </div>
+
+
+
+  <div class="hero-intro">
+    <div class="hero-intro-text">Десять років за об'єктивом — і два з них на передовій.<br>Тепер він знімає жінок із тією ж увагою,<br>з якою колись дивився у приціл.</div>
+  </div>
+
+  <div class="hero-timer" id="heroTimer">00:00:00</div>
+
+    <div class="film-strip" id="filmStrip">
+    <div class="sprockets" id="sp-top"></div>
+    <div class="film-track">
+      <div class="film-inner" id="filmInner"></div>
+    </div>
+    <div class="sprockets" id="sp-bot"></div>
+  </div>
+
+  <!-- Interactive buttons — absolute inside hero -->
+  <div class="cam-btn" id="btn-trash" style="left:37.6%;top:57.8%">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="plus">+</div>
+    <div class="tip">Сховати камеру</div>
+  </div>
+  <div class="cam-btn" id="btn-pause" style="left:37.6%;top:53.8%">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="plus">+</div>
+    <div class="tip">Пауза / Плей</div>
+  </div>
+  <div class="cam-btn" id="btn-zoom" style="left:37.4%;top:49.9%">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="plus">+</div>
+    <div class="tip">Збільшити фото</div>
+  </div>
+  <div class="cam-btn" id="btn-set" style="left:54.8%;top:54.2%">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="plus">+</div>
+    <div class="tip">Завантажити фото</div>
+  </div>
+  <div class="cam-btn" id="btn-max" style="left:37.6%;top:45.6%">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="plus">+</div>
+    <div class="tip">Повний екран фото</div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════
+     02 · ПРО МЕНЕ
+══════════════════════════════ -->
+<section id="about">
+  <div class="about-inner">
+
+    <!-- Section header -->
+    <div class="about-section-head">
+      <div class="portfolio-eyebrow"><span class="num">02</span> / ПРО МЕНЕ</div>
+    </div>
+
+    <!-- MAIN: photo + content -->
+    <div class="about-main">
+
+      <!-- LEFT: photo with fade-mask -->
+      <div class="about-photo-wrap">
+        <div class="about-photo">
+        </div>
+      </div>
+
+      <!-- RIGHT: content panel -->
+      <div class="about-content">
+
+        <!-- Block A: Facts card -->
+        <div class="about-facts-card reveal">
+          <div class="facts-label">— ФАКТИ</div>
+
+          <div class="fact-row">
+            <span class="fact-key">Вік · місто</span>
+            <span class="fact-val">26 років · Буча / Ірпінь</span>
+          </div>
+          <div class="fact-row">
+            <span class="fact-key">Досвід</span>
+            <span class="fact-val">10 років у фотографії · 2.5 р. бойовий кореспондент ЗСУ</span>
+          </div>
+          <div class="fact-row">
+            <span class="fact-key">Освіта</span>
+            <span class="fact-val">Магістр — Історія та Археологія</span>
+          </div>
+          <div class="fact-row">
+            <span class="fact-key">Агенція</span>
+            <span class="fact-val">Myth.agency — мілітарний брендинг</span>
+          </div>
+          <div class="fact-row">
+            <span class="fact-key">Камери</span>
+            <span class="fact-val">5 раритетних + робочий Зеніт</span>
+          </div>
+        </div>
+
+        <!-- Block B: Quote -->
+        <div class="about-quote-block reveal">
+          <p class="about-quote-text">
+            Моє завдання — стати для Вас і <em>співтворцем</em>, і <em>режисером</em>, і <em>фотографом</em>, і <em>дзеркалом</em>.
+          </p>
+          <div class="about-quote-author">
+            <span>Олексій Мельниченко</span>
+          </div>
+        </div>
+
+        <!-- Block C: Values -->
+        <div class="values-label reveal">— ЦІННОСТІ</div>
+        <div class="about-values">
+          <div class="value-card reveal" style="transition-delay:0.55s">
+            <span class="value-num">01</span>
+            <span class="value-title">Автентичність</span>
+            <p class="value-desc">Тільки справжнє. Жодного образу заради образу — лише те, що вже є всередині.</p>
+          </div>
+          <div class="value-card reveal" style="transition-delay:0.65s">
+            <span class="value-num">02</span>
+            <span class="value-title">Щирість</span>
+            <p class="value-desc">Відкритість без маски. Я не знімаю — я свідчу.</p>
+          </div>
+          <div class="value-card reveal" style="transition-delay:0.75s">
+            <span class="value-num">03</span>
+            <span class="value-title">Свобода</span>
+            <p class="value-desc">Простір, де немає правильного чи неправильного. Тільки ти і кадр.</p>
+          </div>
+          <div class="value-card reveal" style="transition-delay:0.85s">
+            <span class="value-num">04</span>
+            <span class="value-title">Повага</span>
+            <p class="value-desc">До кожної жінки. До кожного рішення. До кожного мовчання.</p>
+          </div>
+        </div>
+
+      </div><!-- /.about-content -->
+    </div><!-- /.about-main -->
+
+  </div><!-- /.about-inner -->
+</section>
+
+<!-- ══════════════════════════════
+     03 · МЕТОДИКА
+══════════════════════════════ -->
+<section id="method">
+  <div class="method-grain"></div>
+
+  <div class="method-inner">
+
+    <!-- Section eyebrow -->
+    <div class="method-eyebrow reveal">
+      <span class="num">03</span> / МЕТОДИКА
+    </div>
+
+    <!-- Big headline -->
+    <h2 class="method-headline reveal">
+      Я пропоную свою<br>
+      <em>міждисциплінарну</em><br>
+      методику —<br>
+      синтез досвіду та теорії.
+    </h2>
+
+    <!-- Tag pills -->
+    <div class="method-tags reveal">
+      <span class="method-tag">Архетипічна психологія</span>
+      <span class="method-tag">Структури Міфу</span>
+      <span class="method-tag">Ритуальність</span>
+      <span class="method-tag">Арт-фотографія</span>
+      <span class="method-tag">Особистий бренд</span>
+      <span class="method-tag">Досвід ветерана</span>
+    </div>
+
+    <!-- Two method cards -->
+    <div class="method-cards">
+
+      <div class="method-card reveal" style="transition-delay:0.1s">
+        <span class="method-card-num">01</span>
+        <div class="method-card-label">МЕТОД 01</div>
+        <div class="method-card-title">«Репортаж»</div>
+        <div class="method-card-price">від $50 · менше тижня</div>
+        <p class="method-card-desc">
+          Фотодокументалістика та сторітейлінг —
+          обираємо момент, який героїня хоче прожити.
+          Живий, щирий, репортажний. Без постановки —
+          тільки справжній кадр.
+        </p>
+        <a href="#contacts" class="method-card-cta">
+          Дізнатись більше <span class="method-card-cta-arrow">→</span>
+        </a>
+      </div>
+
+      <div class="method-card reveal" style="transition-delay:0.25s">
+        <span class="method-card-num">02</span>
+        <div class="method-card-label">МЕТОД 02</div>
+        <div class="method-card-title">«Міфозйомка»</div>
+        <div class="method-card-price">від $88 · 1–2 тижні</div>
+        <p class="method-card-desc">
+          Міждисциплінарна методика: архетипи Юнга +
+          структура Кемпбелла + ритуал + арт-фото.
+          Трансформаційний досвід. Це не сесія —
+          це подорож усередину себе.
+        </p>
+        <a href="#contacts" class="method-card-cta">
+          Дізнатись більше <span class="method-card-cta-arrow">→</span>
+        </a>
+      </div>
+
+    </div><!-- /.method-cards -->
+
+    <!-- For whom block -->
+    <div class="method-audience reveal">
+      <div class="method-audience-label">
+        — ДЛЯ КОГО
+        <strong>Це підходить<br>не всім.</strong>
+      </div>
+      <ul class="method-audience-list">
+        <li>Жінки у перехідних станах: завершення, початок, зміна ролі, вигорання, пробудження</li>
+        <li>Жінки-ветеранки, творці, підприємниці, коучі, психологи</li>
+        <li>Ті, хто будує глибокий персональний бренд і працює із сенсами</li>
+        <li>Ті, хто шукає не просто «гарне фото», а досвід і трансформацію</li>
+      </ul>
+    </div>
+
+  </div><!-- /.method-inner -->
+</section>
+
+
+<!-- ══════════════════════════════
+     04 · ПОРТФОЛІО
+══════════════════════════════ -->
+<div id="portfolio-scroll">
+
+  <div id="portfolio-sticky">
+
+    <!-- Intro text: absolute всередині sticky, їде вгору при скролі -->
+    <div id="portfolio-intro">
+
+      <h2 class="pt-intro-heading">
+        Я пропоную свою<br>
+        <em>міждисциплінарну</em><br>
+        методику — синтез<br>
+        <span class="accent">досвіду</span> та <em>теорії</em>
+      </h2>
+
+    </div>
+
+    <div id="portfolio-header">
+      <div class="portfolio-eyebrow">
+        <span class="num">04</span> / ПОРТФОЛІО
+      </div>
+      <div id="portfolio-counter">01 / 12</div>
+    </div>
+
+    <div id="portfolio-hint">скролити вниз</div>
+    <div id="portfolio-progress"></div>
+
+    <div id="portfolio-track">
+
+      <!-- Карта 1: велика вертикальна, зліва -->
+      <div class="pt-card" style="left:80px; top:120px; width:400px; height:520px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-1.png"
+           data-series="Жінка у природі" data-title="Капелюх, річка, трава"
+           data-meta='["35mm", "ISO 400", "Київська обл.", "2024"]'>
+        <div class="pt-card-accent"></div>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-1.png')"></div>
+        <div class="pt-card-info"><span class="pt-series">Жінка у природі</span><span class="pt-title">Капелюх, річка, трава</span></div>
+      </div>
+
+      <!-- Карта 2: горизонтальна вгорі по центру -->
+      <div class="pt-card" style="left:580px; top:70px; width:480px; height:290px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-4.jpg"
+           data-series="Жінка у природі" data-title="Природа, рух"
+           data-meta='["35mm", "ISO 400", "Київська обл.", "2024"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-4.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Жінка у природі</span><span class="pt-title">Природа, рух</span></div>
+      </div>
+
+      <!-- Карта 3: вертикальна внизу, поруч з картою 2 -->
+      <div class="pt-card" style="left:560px; top:390px; width:300px; height:420px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-2.jpg"
+           data-series="Міфозйомка" data-title="Металева сітка"
+           data-meta='["Зеніт", "ISO 800", "Ірпінь", "2024"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-2.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Міфозйомка</span><span class="pt-title">Металева сітка</span></div>
+      </div>
+
+      <!-- Карта 4: велика вертикальна -->
+      <div class="pt-card" style="left:1180px; top:55px; width:440px; height:500px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-3.jpg"
+           data-series="Міфозйомка · Ч/Б" data-title="Перехідний стан"
+           data-meta='["Зеніт", "ISO 1600", "Буча", "2024"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-3.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Міфозйомка · Ч/Б</span><span class="pt-title">Перехідний стан</span></div>
+      </div>
+
+      <!-- Карта 5: вертикальна внизу -->
+      <div class="pt-card" style="left:1740px; top:360px; width:340px; height:430px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-5.jpg"
+           data-series="Бойовий репортаж" data-title="Жінка у тактичному"
+           data-meta='["50mm", "ISO 640", "Київ", "2023"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-5.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Бойовий репортаж</span><span class="pt-title">Жінка у тактичному</span></div>
+      </div>
+
+      <!-- Карта 6: горизонтальна вгорі -->
+      <div class="pt-card" style="left:1720px; top:80px; width:500px; height:260px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-6.jpg"
+           data-series="Жінка у природі" data-title="Річка, відображення"
+           data-meta='["35mm", "ISO 200", "Київська обл.", "2024"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-6.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Жінка у природі</span><span class="pt-title">Річка, відображення</span></div>
+      </div>
+
+      <!-- Карта 7: велика вертикальна по центру -->
+      <div class="pt-card" style="left:2360px; top:130px; width:380px; height:530px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-7.jpg"
+           data-series="Anima Photocode" data-title="Концепт"
+           data-meta='["Зеніт", "ISO 800", "Ірпінь", "2025"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-7.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Anima Photocode</span><span class="pt-title">Концепт</span></div>
+      </div>
+
+
+
+      <!-- Карта 9: велика вертикальна -->
+      <div class="pt-card" style="left:3000px; top:70px; width:360px; height:520px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-9.jpg"
+           data-series="Бойовий репортаж" data-title="Передова. Документ"
+           data-meta='["35mm", "ISO 3200", "Схід", "2022"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-9.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Бойовий репортаж</span><span class="pt-title">Передова. Документ</span></div>
+      </div>
+
+      <!-- Карта 10: менша внизу праворуч -->
+      <div class="pt-card" style="left:3450px; top:380px; width:280px; height:360px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-10.jpg"
+           data-series="Особисте" data-title="Зеніт у руках"
+           data-meta='["Зеніт", "ISO 400", "Ірпінь", "2025"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-10.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Особисте</span><span class="pt-title">Зеніт у руках</span></div>
+      </div>
+
+      <!-- Карта 11: горизонтальна вгорі крайня -->
+      <div class="pt-card" style="left:3440px; top:90px; width:500px; height:270px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-11.jpg"
+           data-series="Жінка у природі" data-title="Світло крізь листя"
+           data-meta='["35mm", "ISO 200", "Київська обл.", "2024"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-11.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Жінка у природі</span><span class="pt-title">Світло крізь листя</span></div>
+      </div>
+
+      <!-- Карта 12: фінальна вертикальна -->
+      <div class="pt-card" style="left:4020px; top:160px; width:360px; height:500px;"
+           data-src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-12.jpg"
+           data-series="Anima Photocode" data-title="Обкладинка"
+           data-meta='["50mm", "ISO 800", "Київ", "2025"]'>
+        <div class="pt-card-photo" style="background-image:url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/photo-12.jpg')"></div>
+        <div class="pt-card-info"><span class="pt-series">Anima Photocode</span><span class="pt-title">Обкладинка</span></div>
+      </div>
+
+    </div><!-- /#portfolio-track -->
+  </div><!-- /#portfolio-sticky -->
+</div><!-- /#portfolio-scroll -->
+
+<!-- ══════════════════════════════
+     05 · МОЄЮ МОВОЮ
+══════════════════════════════ -->
+<section id="section-confession">
+  <div class="s05-inner">
+
+    <!-- Eyebrow — такий самий як в інших розділах -->
+    <div class="about-section-head">
+      <div class="portfolio-eyebrow"><span class="num">05</span> / МОЄЮ МОВОЮ</div>
+    </div>
+
+    <div class="s05-block">
+      <div class="s05-two-col">
+
+        <!-- ЛІВО: заголовок + текст -->
+        <div>
+          <div class="s05-subhead reveal">Чому я<br>знімаю жінок</div>
+          <div class="s05-prose reveal">
+            <p>Карл Юнг казав: кожна людина проходить через смерть і відродження — не один раз, а десятки разів впродовж життя. Жозеф Кемпбелл назвав це «шляхом героя».</p>
+            <p>Жінки, яких я знімаю, — у цій точці. Вигорання. Розлучення. Повернення з фронту. Зміна ролі. Пробудження після довгого сну. Це не криза — це ініціація.</p>
+            <p>Моя зйомка — не фотосесія. Це ритуал переходу. Я не прикрашаю — я допомагаю побачити те, що вже є. Справжнє. Незручне. Потужне.</p>
+          </div>
+        </div>
+
+        <!-- ПРАВО: цитата + теги -->
+        <div>
+          <div class="s05-pullquote reveal">
+            "Жінка у переході — це не слабкість. Це найсміливіший акт, який я знаю."
+          </div>
+          <div class="s05-tags reveal">
+            <span class="s05-tag">Архетипічна психологія</span>
+            <span class="s05-tag">Ритуал переходу</span>
+            <span class="s05-tag">Міф Кемпбелла</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════
+     06 · ПОСЛУГИ
+══════════════════════════════ -->
+<section id="services">
+
+  <!-- Fullscreen video background -->
+  <video id="services-video-bg" autoplay loop muted playsinline>
+    <source src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/Spin.mp4" type="video/mp4">
+  </video>
+
+  <div class="srv-inner">
+
+    <!-- Eyebrow -->
+    <div class="srv-eyebrow">
+      <div class="about-section-head">
+        <div class="portfolio-eyebrow"><span class="num">06</span> / ПОСЛУГИ</div>
+      </div>
+    </div>
+
+    <!-- TWO-COL: left | right -->
+    <div class="srv-stage">
+
+      <!-- LEFT: РЕПОРТАЖ -->
+      <div class="srv-card-left reveal">
+        <div class="srv-method-label">Метод «Репортаж»</div>
+        <div class="srv-price">від $50</div>
+        <div class="srv-price-sub">Термін: менше тижня · 1 концепція · 1 редакція</div>
+        <div class="srv-divider"></div>
+        <div class="srv-includes-label">— Що включено</div>
+        <ul class="srv-list">
+          <li>Передзйомкова консультація</li>
+          <li>Репортажна зйомка 2–4 год</li>
+          <li>Відбір + ретуш 20–30 фото</li>
+          <li>Передача у хмарі</li>
+        </ul>
+      </div>
+
+      <!-- RIGHT: МІФОЗЙОМКА -->
+      <div class="srv-card-right reveal">
+        <div class="srv-method-label">Метод «Міфозйомка»</div>
+        <div class="srv-price">від $88</div>
+        <div class="srv-price-sub">Термін: 1–2 тижні · 1 концепція · 2 редакції</div>
+        <div class="srv-divider"></div>
+        <div class="srv-includes-label">— Що включено</div>
+        <ul class="srv-list">
+          <li>Архетипна анкета (6 розділів)</li>
+          <li>Розробка концепції образу</li>
+          <li>Зйомка 4–6 год (ритуал)</li>
+          <li>Відбір + художня обробка 30–50 фото</li>
+          <li>Передача у хмарі + сторітелінг опис</li>
+        </ul>
+      </div>
+
+    </div><!-- /.srv-stage -->
+
+    <!-- CTA -->
+    <div class="srv-cta-wrap reveal">
+      <div class="srv-disclaimer">"Я допомагаю не всім — тільки тим, хто вже у правді із собою."</div>
+      <a href="#contacts" class="srv-cta-btn">Записатись →</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════
+     08 · КОНТАКТИ
+══════════════════════════════ -->
+<section id="contacts">
+  <div class="ct-inner">
+
+    <!-- Eyebrow -->
+    <div class="about-section-head">
+      <div class="portfolio-eyebrow"><span class="num">08</span> / КОНТАКТИ</div>
+    </div>
+
+    <div class="ct-stage">
+
+      <!-- LEFT: photo + socials -->
+      <div class="ct-left reveal">
+        <div class="ct-photo-wrap">
+          <img class="ct-photo"
+               src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/main.png"
+               alt="Олексій Мельниченко">
+        </div>
+        <div class="ct-person">
+          <div class="ct-person-name">Олексій Мельниченко</div>
+          <div class="ct-person-title">Фотограф · Myth.agency</div>
+          <div class="ct-socials">
+            <a href="https://t.me/oleksiysolan_cd" target="_blank" class="ct-social-link">
+              <span class="ct-social-label">Telegram</span>
+              <span class="ct-social-value">@oleksiysolan_cd</span>
+              <span class="ct-social-arrow">→</span>
+            </a>
+            <a href="https://www.instagram.com/oleksiy.solan" target="_blank" class="ct-social-link">
+              <span class="ct-social-label">Instagram</span>
+              <span class="ct-social-value">@oleksiy.solan</span>
+              <span class="ct-social-arrow">→</span>
+            </a>
+            <a href="https://www.behance.net/animaphotocode_prjct" target="_blank" class="ct-social-link">
+              <span class="ct-social-label">Behance</span>
+              <span class="ct-social-value">animaphotocode_prjct</span>
+              <span class="ct-social-arrow">→</span>
+            </a>
+            <a href="tel:+380630232499" class="ct-social-link">
+              <span class="ct-social-label">Телефон</span>
+              <span class="ct-social-value">+380 63 023 24 99</span>
+              <span class="ct-social-arrow">→</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="ct-agency">
+          <span class="ct-agency-label">Агенція</span>
+          <a href="https://myth.agency" target="_blank" class="ct-agency-link">
+            Myth.agency
+            <span style="font-style:normal;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(26,21,18,0.3)">↗</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- RIGHT: headline + CTA -->
+      <div class="ct-right reveal">
+        <h2 class="ct-headline">Розкажи мені<br><em>свій міф</em></h2>
+        <p class="ct-subheadline">Або просто напиши — я уважно слухаю.</p>
+
+        <div class="ct-how-to">
+          <div class="ct-how-label">Як заповнювати анкету?</div>
+          <div class="ct-how-text">Не бійся бути "неправильною" — будь чесною від серця. Запали свічку, увімкни музику, виділи час. Буде 5 кроків — історія твого Міфу вибудується крок за кроком.<br><br>Допоможи мені побачити себе, щоб ми створили кадри, які відчуватимуться фільмом.</div>
+        </div>
+
+        <button class="ct-cta-btn" id="open-form-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z"/>
+          </svg>
+          Заповнити анкету
+        </button>
+        <p class="ct-disclaimer">Я не знімаю масово. Зараз відкрито <span class="ct-spots">3 місця</span> на місяць.<br>Якщо резонує — пиши.</p>
+      </div>
+
+    </div><!-- /.ct-stage -->
+  </div><!-- /.ct-inner -->
+</section>
+
+<!-- ══════════════════════════════
+     MODAL: АНКЕТА
+══════════════════════════════ -->
+<div id="form-modal">
+  <div class="fm-backdrop" id="modal-backdrop"></div>
+  <div class="fm-panel">
+
+    <div class="fm-header">
+      <span class="fm-step-label" id="fm-step-label">Крок 1 · Намір</span>
+      <button class="fm-close" id="fm-close-btn">ESC ✕</button>
+    </div>
+    <div class="fm-progress">
+      <div class="fm-progress-fill" id="fm-progress-fill" style="width:20%"></div>
+    </div>
+
+    <div class="fm-body" id="fm-body">
+
+      <!-- STEP 1: Намір -->
+      <div class="fm-step active" data-step="1">
+        <img class="fm-img-banner" src="https://images.unsplash.com/photo-1509460913899-515f1df34fea?w=1200&q=70&auto=format&fit=crop" alt="">
+        <div class="fm-step-title">Намір</div>
+        <div class="fm-step-subtitle">Розкажи про себе і мету зйомки</div>
+
+        <div class="fm-row">
+          <div class="fm-field">
+            <label class="fm-label">Ім'я *</label>
+            <input type="text" class="fm-input" placeholder="Як тебе звати?" id="f-name" required>
+          </div>
+          <div class="fm-field">
+            <label class="fm-label">Телефон або Email *</label>
+            <input type="text" class="fm-input" placeholder="+380..." id="f-contact" required>
+          </div>
+        </div>
+        <div class="fm-field">
+          <label class="fm-label">Мета зйомки</label>
+          <textarea class="fm-textarea" placeholder="Розкажи власну мету та цілі зйомки..." id="f-goal"></textarea>
+        </div>
+        <div class="fm-field">
+          <label class="fm-label">Які емоції хочеш прожити?</label>
+          <textarea class="fm-textarea" placeholder="Побачити себе в новому світлі, відчути свободу, торкнутись жіночого..." id="f-emotions" style="min-height:70px;"></textarea>
+        </div>
+      </div>
+
+      <!-- STEP 2: Архетип -->
+      <div class="fm-step" data-step="2">
+        <img class="fm-img-banner" src="https://images.unsplash.com/photo-1525130413817-d45c1d127c42?w=1200&q=70&auto=format&fit=crop&fp-y=0.3" alt="">
+        <div class="fm-step-title">Архетип</div>
+        <div class="fm-step-subtitle">Які архетипи резонують з тобою?</div>
+
+        <div class="fm-checks">
+          <span class="fm-group-label">Інь — м'яка сила</span>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Муза<span class="fm-check-sub">Натхнення, легкість, енергія</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Мати<span class="fm-check-sub">Любов, підтримка</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Коханка<span class="fm-check-sub">Магнетизм, пристрасть</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Місячна<span class="fm-check-sub">Мрійливість, чутливість</span></span>
+          </label>
+
+          <span class="fm-group-label">Янь — активна сила</span>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Бунтарка<span class="fm-check-sub">Зламує систему, революція</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Воїтелька<span class="fm-check-sub">Автономна, сильна, цілеспрямована</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Темна богиня<span class="fm-check-sub">Перетворення, тінь, хаос</span></span>
+          </label>
+
+          <span class="fm-group-label">Трікстерські · Збалансовані</span>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Артистка<span class="fm-check-sub">Міняє ролі, провокує, творча</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Жриця<span class="fm-check-sub">Знання, мудрість, глибина</span></span>
+          </label>
+        </div>
+        <div class="fm-field" style="margin-top:20px;">
+          <label class="fm-label">Хтось із відомих надихає тебе?</label>
+          <input type="text" class="fm-input" placeholder="Наприклад: Моніка Белуччі, Глен Клоуз..." id="f-inspiration">
+        </div>
+      </div>
+
+      <!-- STEP 3: Атмосфера -->
+      <div class="fm-step" data-step="3">
+        <img class="fm-img-banner" src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&q=70&auto=format&fit=crop&fp-y=0.4" alt="">
+        <div class="fm-step-title">Атмосфера</div>
+        <div class="fm-step-subtitle">Настрій і простір зйомки</div>
+
+        <div class="fm-label" style="margin-bottom:12px;">Колір / настрій</div>
+        <div class="fm-checks two-col" style="margin-bottom:32px;">
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Пастель<span class="fm-check-sub">Чистота, невинність</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Червоне<span class="fm-check-sub">Ритуал, бажання</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Ніч<span class="fm-check-sub">Містика, несвідоме</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Холод<span class="fm-check-sub">Самотність, кришталь</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Сонце<span class="fm-check-sub">Тепло, енергія, життя</span></span>
+          </label>
+        </div>
+
+        <div class="fm-label" style="margin-bottom:12px;">Локація</div>
+        <div class="fm-checks two-col">
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Природа<span class="fm-check-sub">Дикість, ритуал</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Місто<span class="fm-check-sub">Архетип міського тіла</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Інтер'єр<span class="fm-check-sub">Інтим, деталі</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Озеро / ліс<span class="fm-check-sub">Дзеркало, тіні</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Студія<span class="fm-check-sub">Опиши ідею нижче</span></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- STEP 4: Образ -->
+      <div class="fm-step" data-step="4">
+        <img class="fm-img-banner" src="https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1200&q=70&auto=format&fit=crop" alt="">
+        <div class="fm-step-title">Образ</div>
+        <div class="fm-step-subtitle">Що фіксуємо і що несеш у кадр</div>
+
+        <div class="fm-label" style="margin-bottom:12px;">Що знімаємо</div>
+        <div class="fm-checks" style="margin-bottom:32px;">
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Рух / перформанс<span class="fm-check-sub">Ритуал, дія, звільнення</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Частини тіла / жест<span class="fm-check-sub">Вразливість, тілесність, меседж</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Повний зріст<span class="fm-check-sub">Архетип, образ, роль</span></span>
+          </label>
+          <label class="fm-check-item">
+            <input type="checkbox" class="fm-check-input"><div class="fm-check-box"></div>
+            <span class="fm-check-text">Портрет<span class="fm-check-sub">Душа в очах</span></span>
+          </label>
+        </div>
+
+        <div class="fm-field">
+          <label class="fm-label">Символи / атрибути (необов'язково)</label>
+          <textarea class="fm-textarea" placeholder="Рослини, артефакти, тканина... Наприклад: троянда, дзеркало, маска, шовк" id="f-symbols" style="min-height:70px;"></textarea>
+        </div>
+        <div class="fm-field">
+          <label class="fm-label">Що хочеш через цю зйомку?</label>
+          <textarea class="fm-textarea" placeholder="Закріпити нову роль, повернути собі себе, залишити минуле..." id="f-intention" style="min-height:70px;"></textarea>
+        </div>
+      </div>
+
+      <!-- STEP 5: Контакт -->
+      <div class="fm-step" data-step="5">
+        <img class="fm-img-banner" src="https://images.unsplash.com/photo-1485856407642-7f9ba0268b51?w=1200&q=70&auto=format&fit=crop&fp-y=0.2" alt="">
+        <div class="fm-step-title">Ми майже завершили</div>
+        <div class="fm-step-subtitle">Останні деталі — і я уважно слухаю</div>
+
+        <div class="fm-field">
+          <label class="fm-label">Як би ти описала зйомку історією?</label>
+          <textarea class="fm-textarea" placeholder="Що з тобою сталося, і куди ти йдеш..." id="f-story"></textarea>
+        </div>
+        <div class="fm-field">
+          <label class="fm-label">Як не знімати / що не знімати?</label>
+          <textarea class="fm-textarea" placeholder="Більше правої сторони обличчя, не знімати знизу, без сильної посмішки..." id="f-avoid" style="min-height:70px;"></textarea>
+        </div>
+        <div class="fm-field">
+          <label class="fm-label">Побажання автору</label>
+          <input type="text" class="fm-input" placeholder="Будь-що, що важливо сказати..." id="f-wish">
+        </div>
+      </div>
+
+    </div><!-- /.fm-body -->
+
+    <!-- Success screen -->
+    <div class="fm-success" id="fm-success">
+      <div class="fm-success-icon">✦</div>
+      <div class="fm-success-title">Дякую за довіру</div>
+      <div class="fm-success-text">Твою анкету отримано. Я уважно прочитаю і напишу тобі впродовж 24 годин. Тепер — починається твій міф.</div>
+    </div>
+
+    <div class="fm-footer" id="fm-footer">
+      <button class="fm-btn-prev" id="fm-prev" disabled>← Назад</button>
+      <div class="fm-step-dots" id="fm-dots">
+        <div class="fm-dot active"></div>
+        <div class="fm-dot"></div>
+        <div class="fm-dot"></div>
+        <div class="fm-dot"></div>
+        <div class="fm-dot"></div>
+      </div>
+      <button class="fm-btn-next" id="fm-next">Далі →</button>
+    </div>
+
+  </div><!-- /.fm-panel -->
+</div><!-- /#form-modal -->
+
+<!-- ── Portfolio Lightbox ── -->
+<div id="portfolio-lb">
+  <button id="plb-close">ESC ✕</button>
+  <div id="plb-counter-lb"></div>
+
+  <div id="plb-img-wrap">
+    <img id="plb-img" src="" alt="">
+  </div>
+
+  <button class="plb-arrow" id="plb-prev">&#8592;</button>
+  <button class="plb-arrow" id="plb-next">&#8594;</button>
+
+  <div id="plb-meta">
+    <span class="plb-meta-item" id="plb-m0"></span>
+    <span class="plb-meta-item" id="plb-m1"></span>
+    <span class="plb-meta-item" id="plb-m2"></span>
+    <span class="plb-meta-item" id="plb-m3"></span>
+    <span class="plb-meta-title" id="plb-title"></span>
+  </div>
+</div>
+
+<!-- Fullscreen photo overlay -->
+<div id="fullscreen-photo">
+  <span id="fs-close">✕</span>
+  <img id="fs-img" src="" alt="">
+</div>
+
+<!-- Restore camera button -->
+<div id="restore-btn">
+  <svg width="80" height="95" viewBox="0 0 80 95" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="22" width="64" height="44" rx="6" stroke="white" stroke-width="2.5" fill="none"/>
+    <circle cx="40" cy="44" r="13" stroke="white" stroke-width="2.5" fill="none"/>
+    <circle cx="40" cy="44" r="6" fill="white" opacity="0.4"/>
+    <path d="M24 22v-6a4 4 0 0 1 4-4h8l4 6" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <circle cx="62" cy="30" r="3" fill="white" opacity="0.6"/>
+    <text x="40" y="82" text-anchor="middle" fill="white" font-size="9" font-family="monospace" opacity="0.7">повернути</text>
+  </svg>
+</div>
+
+<script>
+  const photos = [
+    'https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/1.png',
+    'https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/2.png',
+    'https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/3.jpg',
+    'https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/4.png',
+    'https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/5.jpg',
+    'https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/6.jpg',
+  ];
+
+  // Build film
+  const inner = document.getElementById('filmInner');
+  const repeated = [];
+  for (let i = 0; i < 20; i++) repeated.push(...photos);
+  [...repeated, ...repeated].forEach(src => {
+    const d = document.createElement('div');
+    d.className = 'film-frame';
+    d.style.backgroundImage = `url('${src}')`;
+    inner.appendChild(d);
+  });
+
+  ['sp-top','sp-bot'].forEach(id => {
+    const sp = document.getElementById(id);
+    for (let i = 0; i < 60; i++) {
+      const h = document.createElement('div');
+      h.className = 'sprocket-hole';
+      sp.appendChild(h);
+    }
+  });
+
+  // Slideshow
+  const bgSlides = document.querySelectorAll('.bg-slide');
+  const lcdSlides = document.querySelectorAll('.lcd-slide');
+  let current = 0;
+  let slideshowInterval = setInterval(next, 3000);
+  let paused = false;
+  let zoomed = false;
+
+  function next() {
+    bgSlides[current].classList.remove('active');
+    lcdSlides[current].classList.remove('active');
+    current = (current + 1) % bgSlides.length;
+    bgSlides[current].classList.add('active');
+    lcdSlides[current].classList.add('active');
+  }
+
+  // 🗑 TRASH — hide camera + film, show restore icon
+  document.getElementById('btn-trash').addEventListener('click', () => {
+    document.getElementById('cameraWrap').classList.add('hidden');
+    document.getElementById('filmStrip').classList.add('hidden');
+    document.querySelectorAll('.cam-btn').forEach(b => { b.style.opacity = '0'; b.style.pointerEvents = 'none'; });
+    document.getElementById('restore-btn').classList.add('active');
+  });
+
+  // Restore camera
+  document.getElementById('restore-btn').addEventListener('click', () => {
+    document.getElementById('cameraWrap').classList.remove('hidden');
+    document.getElementById('filmStrip').classList.remove('hidden');
+    document.querySelectorAll('.cam-btn').forEach(b => { b.style.opacity = ''; b.style.pointerEvents = ''; });
+    document.getElementById('restore-btn').classList.remove('active');
+  });
+
+  // ⏸ PAUSE
+  document.getElementById('btn-pause').addEventListener('click', () => {
+    paused = !paused;
+    if (paused) {
+      clearInterval(slideshowInterval);
+      inner.classList.add('paused');
+      document.getElementById('btn-pause').querySelector('.plus').textContent = '▶';
+      document.getElementById('btn-pause').querySelector('.tip').textContent = 'Продовжити';
+    } else {
+      slideshowInterval = setInterval(next, 3000);
+      inner.classList.remove('paused');
+      document.getElementById('btn-pause').querySelector('.plus').textContent = '+';
+      document.getElementById('btn-pause').querySelector('.tip').textContent = 'Пауза / Плей';
+    }
+  });
+
+  // 🔍 ZOOM
+  document.getElementById('btn-zoom').addEventListener('click', () => {
+    zoomed = !zoomed;
+    bgSlides.forEach(s => s.classList.toggle('zoomed', zoomed));
+    document.getElementById('btn-zoom').querySelector('.tip').textContent = zoomed ? 'Зменшити' : 'Збільшити фото';
+  });
+
+  // SET — download current photo
+  document.getElementById('btn-set').addEventListener('click', () => {
+    const url = photos[current];
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `photo-${current + 1}`;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  // MAX — fullscreen photo
+  document.getElementById('btn-max').addEventListener('click', () => {
+    const fs = document.getElementById('fullscreen-photo');
+    document.getElementById('fs-img').src = photos[current];
+    fs.classList.add('active');
+  });
+
+  document.getElementById('fs-close').addEventListener('click', () => {
+    document.getElementById('fullscreen-photo').classList.remove('active');
+  });
+
+  // ESC закриває fullscreen photo
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      document.getElementById('fullscreen-photo').classList.remove('active');
+    }
+  });
+</script>
+<script>
+(function(){
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function tick(){
+    var now = new Date();
+    var h = now.getHours();
+    var m = now.getMinutes();
+    var s = now.getSeconds();
+    document.getElementById('heroTimer').textContent = pad(h)+':'+pad(m)+':'+pad(s);
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+<script>
+// ── Scroll reveal (IntersectionObserver) ──
+(function(){
+  const items = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  items.forEach(function(el){ io.observe(el); });
+})();
+// Nav anchors — всі посилання правильні
+document.querySelectorAll('.nav-links a').forEach(function(a){
+  var txt = a.textContent.trim().toLowerCase();
+  if(txt.indexOf('головн') !== -1) a.href = '#hero';
+  if(txt.indexOf('про') !== -1) a.href = '#about';
+  if(txt.indexOf('портфол') !== -1) a.href = '#portfolio-scroll';
+  if(txt.indexOf('послуг') !== -1) a.href = '#method';
+});
+
+// ── Ховаємо cam-btn при виході з hero (scroll-based, reliable) ──
+(function(){
+  var threshold = window.innerHeight * 0.5; // half viewport
+  function update(){
+    if(window.scrollY > threshold){
+      document.body.classList.add('scrolled-past-hero');
+    } else {
+      document.body.classList.remove('scrolled-past-hero');
+    }
+  }
+  update();
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', function(){
+    threshold = window.innerHeight * 0.5;
+    update();
+  });
+})();
+</script>
+
+<script>
+// ══════════════════════════════════════
+// 04 · PORTFOLIO — scroll-driven horizontal
+// ══════════════════════════════════════
+(function(){
+  var scrollEl  = document.getElementById('portfolio-scroll');
+  var sticky    = document.getElementById('portfolio-sticky');
+  var track     = document.getElementById('portfolio-track');
+  var header    = document.getElementById('portfolio-header');
+  var hint      = document.getElementById('portfolio-hint');
+  var progress  = document.getElementById('portfolio-progress');
+  var counter   = document.getElementById('portfolio-counter');
+  var cards     = Array.from(track.querySelectorAll('.pt-card'));
+  var introEl   = document.getElementById('portfolio-intro');
+  var lb        = document.getElementById('portfolio-lb');
+  var lbImg     = document.getElementById('plb-img');
+  var lbTitle   = document.getElementById('plb-title');
+  var lbCounterEl = document.getElementById('plb-counter-lb');
+  var lbMeta    = [document.getElementById('plb-m0'),document.getElementById('plb-m1'),document.getElementById('plb-m2'),document.getElementById('plb-m3')];
+
+  if(!scrollEl || !track) return;
+
+  // ── Динамічно коригуємо висоту секції та ширину треку ──
+  function updateScrollHeight(){
+    var trackW = getTrackWidth();
+    track.style.width = trackW + 'px';
+    var needed = window.innerHeight + Math.max(0, trackW - window.innerWidth) + 200;
+    scrollEl.style.height = needed + 'px';
+  }
+  window.addEventListener('resize', updateScrollHeight);
+  // Запустимо після завантаження зображень
+  window.addEventListener('load', updateScrollHeight);
+  setTimeout(updateScrollHeight, 500);
+
+  // ── Розраховуємо загальну ширину треку (по абсолютних позиціях) ──
+  function getTrackWidth(){
+    var maxRight = 0;
+    cards.forEach(function(c){
+      var right = (parseInt(c.style.left)||0) + c.offsetWidth;
+      if(right > maxRight) maxRight = right;
+    });
+    return maxRight + 120; // + відступ після останньої карти
+  }
+
+  // ── Scroll → translate ──
+  var raf = null;
+  var currentX = 0;
+  var targetX  = 0;
+
+  function onScroll(){
+    var rect = scrollEl.getBoundingClientRect();
+    var scrollable = scrollEl.offsetHeight - window.innerHeight;
+    if(scrollable <= 0) return;
+
+    var scrolled = -rect.top;
+    if(scrolled < 0) scrolled = 0;
+    if(scrolled > scrollable) scrolled = scrollable;
+
+    var ratio = scrolled / scrollable;
+
+    var trackW   = getTrackWidth();
+    var maxShift = trackW - window.innerWidth;
+    if(maxShift < 0) maxShift = 0;
+
+    // При ratio=0 трек зсунутий на +window.innerWidth (все за правим краєм)
+    // При ratio=1 трек зсунутий на -maxShift (все прокручено вліво)
+    // Плавний перехід від +vw → -maxShift
+    var entryShift = window.innerWidth * 0.85; // скільки пікселів "въезду" зверху
+    var entryRatio = Math.min(1, scrolled / (window.innerHeight * 0.3)); // перші 30vh — вьезд
+    var slideIn    = entryShift * (1 - entryRatio); // 0 коли вже "въехали"
+
+    targetX = -(ratio * maxShift) + slideIn;
+
+    // Intro text: absolute в sticky-контейнері
+    // scrolled=0 → стоїть нерухомо з opacity=1
+    // scrolled>0 → їде вгору синхронно зі scrolled, зникає
+    if(introEl){
+      if(scrolled <= 0){
+        // Ще не скролили — показуємо нерухомо
+        introEl.style.transition = 'opacity 0.6s ease';
+        introEl.style.opacity = '1';
+        introEl.style.transform = 'translateY(0)';
+      } else if(entryRatio < 1){
+        // Активний скрол — їде вгору, зникає вдвічі швидше
+        var introOpacity = Math.max(0, 1 - entryRatio * 2.5);
+        var introY = -(scrolled * 0.6); // трохи повільніше за скрол — кінематичний ефект
+        introEl.style.transition = 'none';
+        introEl.style.opacity = introOpacity;
+        introEl.style.transform = 'translateY(' + introY + 'px)';
+      } else {
+        // Картки вже показались — текст прихований і вище екрану
+        introEl.style.transition = 'none';
+        introEl.style.opacity = '0';
+        introEl.style.transform = 'translateY(-100vh)';
+      }
+    }
+
+    // Progress bar
+    progress.style.width = (ratio * 100) + '%';
+
+    // Counter
+    var idx = Math.round(ratio * (cards.length - 1));
+    counter.textContent = String(idx + 1).padStart(2,'0') + ' / ' + String(cards.length).padStart(2,'0');
+
+    // Hint
+    if(scrolled > 60) hint.classList.add('hidden');
+    else hint.classList.remove('hidden');
+
+    // Header fade
+    if(scrolled > 30) header.classList.add('faded');
+    else header.classList.remove('faded');
+
+    // Reveal: карта стає visible коли її left < поточний правий край viewport
+    var viewportRight = -targetX + window.innerWidth + 80;
+    cards.forEach(function(card){
+      var cardLeft = parseInt(card.style.left) || 0;
+      if(scrolled > 0 && cardLeft < viewportRight){
+        card.classList.add('visible');
+      } else if(scrolled <= 0){
+        card.classList.remove('visible');
+      }
+    });
+
+    if(!raf) raf = requestAnimationFrame(applyTransform);
+  }
+
+  function applyTransform(){
+    raf = null;
+    // Плавне наздоганяння — easing
+    currentX += (targetX - currentX) * 0.1;
+    track.style.transform = 'translateX(' + currentX + 'px)';
+    if(Math.abs(targetX - currentX) > 0.5){
+      raf = requestAnimationFrame(applyTransform);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll(); // ініціальний стан
+
+  // Показуємо intro-текст коли секція входить у viewport (один раз)
+  var introShown = false;
+  var introObserver = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting && !introShown){
+        introShown = true;
+        introEl.style.transition = 'opacity 0.7s ease';
+        introEl.style.opacity = '1';
+      }
+    });
+  }, { threshold: 0.05 });
+  if(introEl) introObserver.observe(scrollEl);
+
+  // ── Lightbox ──
+  var currentIdx = 0;
+
+  function openLB(idx){
+    currentIdx = idx;
+    showLBItem();
+    lb.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLB(){
+    lb.classList.remove('active');
+    document.body.style.overflow = '';
+    lbImg.classList.remove('loaded');
+  }
+  function showLBItem(){
+    var card = cards[currentIdx];
+    if(!card) return;
+    lbImg.classList.remove('loaded');
+    lbImg.src = card.dataset.src;
+    lbImg.onload = function(){ lbImg.classList.add('loaded'); };
+    if(lbTitle) lbTitle.textContent = card.dataset.series + ' — ' + card.dataset.title;
+    if(lbCounterEl) lbCounterEl.textContent = (currentIdx+1) + ' / ' + cards.length;
+    var meta = [];
+    try{ meta = JSON.parse(card.dataset.meta||'[]'); }catch(e){}
+    lbMeta.forEach(function(el,i){ if(el) el.textContent = meta[i]||''; });
+  }
+
+  cards.forEach(function(card,i){
+    card.addEventListener('click', function(){ openLB(i); });
+  });
+
+  document.getElementById('plb-close').addEventListener('click', closeLB);
+  document.getElementById('plb-prev').addEventListener('click', function(){
+    currentIdx = (currentIdx - 1 + cards.length) % cards.length;
+    showLBItem();
+  });
+  document.getElementById('plb-next').addEventListener('click', function(){
+    currentIdx = (currentIdx + 1) % cards.length;
+    showLBItem();
+  });
+  lb.addEventListener('click', function(e){ if(e.target===lb) closeLB(); });
+  document.addEventListener('keydown', function(e){
+    if(!lb.classList.contains('active')) return;
+    if(e.key==='Escape') closeLB();
+    if(e.key==='ArrowLeft'){ currentIdx=(currentIdx-1+cards.length)%cards.length; showLBItem(); }
+    if(e.key==='ArrowRight'){ currentIdx=(currentIdx+1)%cards.length; showLBItem(); }
+  });
+  var touchX=0;
+  lb.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;},{passive:true});
+  lb.addEventListener('touchend',function(e){
+    var dx=e.changedTouches[0].clientX-touchX;
+    if(Math.abs(dx)>50){ if(dx<0){currentIdx=(currentIdx+1)%cards.length;}else{currentIdx=(currentIdx-1+cards.length)%cards.length;} showLBItem(); }
+  });
+})();
+</script>
+
+<script>
+/* ── FORM MODAL ── */
+(function(){
+  const modal     = document.getElementById('form-modal');
+  const backdrop  = document.getElementById('modal-backdrop');
+  const closeBtn  = document.getElementById('fm-close-btn');
+  const openBtn   = document.getElementById('open-form-btn');
+  const steps     = document.querySelectorAll('.fm-step');
+  const dots      = document.querySelectorAll('.fm-dot');
+  const prevBtn   = document.getElementById('fm-prev');
+  const nextBtn   = document.getElementById('fm-next');
+  const stepLabel = document.getElementById('fm-step-label');
+  const progressFill = document.getElementById('fm-progress-fill');
+  const footer    = document.getElementById('fm-footer');
+  const success   = document.getElementById('fm-success');
+  const body      = document.getElementById('fm-body');
+
+  const LABELS = [
+    'Крок 1 · Намір',
+    'Крок 2 · Архетип',
+    'Крок 3 · Атмосфера',
+    'Крок 4 · Образ',
+    'Крок 5 · Завершення'
+  ];
+  let current = 0;
+  const TOTAL = steps.length;
+
+  function openModal() {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  function goTo(idx) {
+    steps[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = idx;
+    steps[current].classList.add('active');
+    dots[current].classList.add('active');
+    stepLabel.textContent = LABELS[current];
+    progressFill.style.width = ((current + 1) / TOTAL * 100) + '%';
+    prevBtn.disabled = current === 0;
+    nextBtn.textContent = current === TOTAL - 1 ? 'Надіслати →' : 'Далі →';
+    // Scroll body to top
+    body.scrollTop = 0;
+  }
+
+  openBtn.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', closeModal);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+  });
+
+  prevBtn.addEventListener('click', function() {
+    if (current > 0) goTo(current - 1);
+  });
+
+  nextBtn.addEventListener('click', function() {
+    // Validate step 1
+    if (current === 0) {
+      var name = document.getElementById('f-name').value.trim();
+      var contact = document.getElementById('f-contact').value.trim();
+      if (!name || !contact) {
+        document.getElementById('f-name').style.borderBottomColor = '#C0392B';
+        document.getElementById('f-contact').style.borderBottomColor = '#C0392B';
+        setTimeout(function(){
+          document.getElementById('f-name').style.borderBottomColor = '';
+          document.getElementById('f-contact').style.borderBottomColor = '';
+        }, 1800);
+        return;
+      }
+    }
+
+    if (current < TOTAL - 1) {
+      goTo(current + 1);
+    } else {
+      // Submit
+      body.style.display = 'none';
+      footer.style.display = 'none';
+      success.classList.add('show');
+      stepLabel.textContent = 'Дякую ✦';
+      progressFill.style.width = '100%';
+    }
+  });
+
+  // Reset on close
+  closeBtn.addEventListener('click', function() {
+    setTimeout(function() {
+      if (!modal.classList.contains('active')) {
+        body.style.display = '';
+        footer.style.display = '';
+        success.classList.remove('show');
+        goTo(0);
+      }
+    }, 400);
+  });
+  backdrop.addEventListener('click', function() {
+    setTimeout(function() {
+      if (!modal.classList.contains('active')) {
+        body.style.display = '';
+        footer.style.display = '';
+        success.classList.remove('show');
+        goTo(0);
+      }
+    }, 400);
+  });
+
+  // Nav CTA links
+  document.querySelectorAll('a[href="#contacts"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      // just let it scroll, don't open modal
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
