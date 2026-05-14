@@ -30,6 +30,35 @@
 
   .hero { position: relative; width: 100vw; height: 100vh; }
 
+  /* ── HERO VIDEO BG ── */
+  .hero-bg-video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+
+  /* ── NEW LOGO ── */
+  .hero-logo-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .hero-logo-img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(0,0,0,0.6));
+  }
+  .hero-brand-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.32em;
+    color: rgba(255,255,255,0.75);
+    text-transform: uppercase;
+  }
+
   .bg-slide {
     position: absolute; inset: 0;
     background-size: cover; background-position: center;
@@ -2412,37 +2441,18 @@
 
 <div class="hero" id="hero">
 
-  <div class="bg-slide active" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/preview.jpg')"></div>
-  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/2.png')"></div>
-  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/1.png')"></div>
-  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/preview.jpg')"></div>
-  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/5.jpg')"></div>
-  <div class="bg-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/6.jpg')"></div>
+  <video class="hero-bg-video" autoplay muted loop playsinline>
+    <source src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/BG.mp4" type="video/mp4">
+  </video>
   <div class="bg-overlay"></div>
 
-  <!-- Логотип ОМ — тільки в HERO, absolute -->
+  <!-- Логотип — тільки в HERO, absolute -->
   <div class="hero-logo">
-    <div class="nav-logo-box">
-      <span class="c"></span>
-      <span class="nav-logo-text">ОМ</span>
+    <div class="hero-logo-inner">
+      <img src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/logo.png" alt="Logo" class="hero-logo-img">
+      <span class="hero-brand-text">ANIMA.PHOTOCODE</span>
     </div>
   </div>
-
-  <div class="camera-wrap" id="cameraWrap">
-    <div class="camera-container">
-      <div class="lcd-screen">
-        <div class="lcd-slide active" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/preview.jpg')"></div>
-        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/2.png')"></div>
-        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/1.png')"></div>
-        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/preview.jpg')"></div>
-        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/5.jpg')"></div>
-        <div class="lcd-slide" style="background-image: url('https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/6.jpg')"></div>
-      </div>
-      <img class="camera-img" src="https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/camera.png" alt="Camera">
-    </div>
-  </div>
-
-
 
   <div class="hero-intro">
     <div class="hero-intro-text">Десять років за об'єктивом — і два з них на передовій.<br>Тепер він знімає жінок із тією ж увагою,<br>з якою колись дивився у приціл.</div>
@@ -2450,46 +2460,13 @@
 
   <div class="hero-timer" id="heroTimer">00:00:00</div>
 
-    <div class="film-strip" id="filmStrip">
+  <div class="film-strip" id="filmStrip">
     <div class="sprockets" id="sp-top"></div>
     <div class="film-track">
       <div class="film-inner" id="filmInner"></div>
     </div>
     <div class="sprockets" id="sp-bot"></div>
   </div>
-
-  <!-- Interactive buttons — absolute inside hero -->
-  <div class="cam-btn" id="btn-trash" style="left:37.6%;top:57.8%">
-    <div class="pulse-ring"></div>
-    <div class="pulse-ring"></div>
-    <div class="plus">+</div>
-    <div class="tip">Сховати камеру</div>
-  </div>
-  <div class="cam-btn" id="btn-pause" style="left:37.6%;top:53.8%">
-    <div class="pulse-ring"></div>
-    <div class="pulse-ring"></div>
-    <div class="plus">+</div>
-    <div class="tip">Пауза / Плей</div>
-  </div>
-  <div class="cam-btn" id="btn-zoom" style="left:37.4%;top:49.9%">
-    <div class="pulse-ring"></div>
-    <div class="pulse-ring"></div>
-    <div class="plus">+</div>
-    <div class="tip">Збільшити фото</div>
-  </div>
-  <div class="cam-btn" id="btn-set" style="left:54.8%;top:54.2%">
-    <div class="pulse-ring"></div>
-    <div class="pulse-ring"></div>
-    <div class="plus">+</div>
-    <div class="tip">Завантажити фото</div>
-  </div>
-  <div class="cam-btn" id="btn-max" style="left:37.6%;top:45.6%">
-    <div class="pulse-ring"></div>
-    <div class="pulse-ring"></div>
-    <div class="plus">+</div>
-    <div class="tip">Повний екран фото</div>
-  </div>
-
 </div>
 
 <!-- ══════════════════════════════
@@ -3245,22 +3222,6 @@
 </div>
 
 <!-- Fullscreen photo overlay -->
-<div id="fullscreen-photo">
-  <span id="fs-close">✕</span>
-  <img id="fs-img" src="" alt="">
-</div>
-
-<!-- Restore camera button -->
-<div id="restore-btn">
-  <svg width="80" height="95" viewBox="0 0 80 95" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="8" y="22" width="64" height="44" rx="6" stroke="white" stroke-width="2.5" fill="none"/>
-    <circle cx="40" cy="44" r="13" stroke="white" stroke-width="2.5" fill="none"/>
-    <circle cx="40" cy="44" r="6" fill="white" opacity="0.4"/>
-    <path d="M24 22v-6a4 4 0 0 1 4-4h8l4 6" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-    <circle cx="62" cy="30" r="3" fill="white" opacity="0.6"/>
-    <text x="40" y="82" text-anchor="middle" fill="white" font-size="9" font-family="monospace" opacity="0.7">повернути</text>
-  </svg>
-</div>
 
 <script>
   const photos = [
@@ -3272,7 +3233,7 @@
     'https://raw.githubusercontent.com/bogdangodluk22-art/Photo-site/main/6.jpg',
   ];
 
-  // Build film
+  // Build film strip
   const inner = document.getElementById('filmInner');
   const repeated = [];
   for (let i = 0; i < 20; i++) repeated.push(...photos);
@@ -3289,91 +3250,6 @@
       const h = document.createElement('div');
       h.className = 'sprocket-hole';
       sp.appendChild(h);
-    }
-  });
-
-  // Slideshow
-  const bgSlides = document.querySelectorAll('.bg-slide');
-  const lcdSlides = document.querySelectorAll('.lcd-slide');
-  let current = 0;
-  let slideshowInterval = setInterval(next, 3000);
-  let paused = false;
-  let zoomed = false;
-
-  function next() {
-    bgSlides[current].classList.remove('active');
-    lcdSlides[current].classList.remove('active');
-    current = (current + 1) % bgSlides.length;
-    bgSlides[current].classList.add('active');
-    lcdSlides[current].classList.add('active');
-  }
-
-  // 🗑 TRASH — hide camera + film, show restore icon
-  document.getElementById('btn-trash').addEventListener('click', () => {
-    document.getElementById('cameraWrap').classList.add('hidden');
-    document.getElementById('filmStrip').classList.add('hidden');
-    document.querySelectorAll('.cam-btn').forEach(b => { b.style.opacity = '0'; b.style.pointerEvents = 'none'; });
-    document.getElementById('restore-btn').classList.add('active');
-  });
-
-  // Restore camera
-  document.getElementById('restore-btn').addEventListener('click', () => {
-    document.getElementById('cameraWrap').classList.remove('hidden');
-    document.getElementById('filmStrip').classList.remove('hidden');
-    document.querySelectorAll('.cam-btn').forEach(b => { b.style.opacity = ''; b.style.pointerEvents = ''; });
-    document.getElementById('restore-btn').classList.remove('active');
-  });
-
-  // ⏸ PAUSE
-  document.getElementById('btn-pause').addEventListener('click', () => {
-    paused = !paused;
-    if (paused) {
-      clearInterval(slideshowInterval);
-      inner.classList.add('paused');
-      document.getElementById('btn-pause').querySelector('.plus').textContent = '▶';
-      document.getElementById('btn-pause').querySelector('.tip').textContent = 'Продовжити';
-    } else {
-      slideshowInterval = setInterval(next, 3000);
-      inner.classList.remove('paused');
-      document.getElementById('btn-pause').querySelector('.plus').textContent = '+';
-      document.getElementById('btn-pause').querySelector('.tip').textContent = 'Пауза / Плей';
-    }
-  });
-
-  // 🔍 ZOOM
-  document.getElementById('btn-zoom').addEventListener('click', () => {
-    zoomed = !zoomed;
-    bgSlides.forEach(s => s.classList.toggle('zoomed', zoomed));
-    document.getElementById('btn-zoom').querySelector('.tip').textContent = zoomed ? 'Зменшити' : 'Збільшити фото';
-  });
-
-  // SET — download current photo
-  document.getElementById('btn-set').addEventListener('click', () => {
-    const url = photos[current];
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `photo-${current + 1}`;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  });
-
-  // MAX — fullscreen photo
-  document.getElementById('btn-max').addEventListener('click', () => {
-    const fs = document.getElementById('fullscreen-photo');
-    document.getElementById('fs-img').src = photos[current];
-    fs.classList.add('active');
-  });
-
-  document.getElementById('fs-close').addEventListener('click', () => {
-    document.getElementById('fullscreen-photo').classList.remove('active');
-  });
-
-  // ESC закриває fullscreen photo
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      document.getElementById('fullscreen-photo').classList.remove('active');
     }
   });
 </script>
