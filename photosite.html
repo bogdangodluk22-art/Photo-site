@@ -799,32 +799,7 @@
     min-height: 100vh;
   }
 
-  /* ── Red curtain accents left + right (DGC style) ── */
-  #method::before,
-  #method::after {
-    content: '';
-    position: absolute;
-    top: 0; bottom: 0;
-    width: 120px;
-    pointer-events: none;
-    z-index: 1;
-  }
-  #method::before {
-    left: 0;
-    background: linear-gradient(to right,
-      rgba(192,57,43,0.55) 0%,
-      rgba(192,57,43,0.18) 40%,
-      transparent 100%
-    );
-  }
-  #method::after {
-    right: 0;
-    background: linear-gradient(to left,
-      rgba(192,57,43,0.55) 0%,
-      rgba(192,57,43,0.18) 40%,
-      transparent 100%
-    );
-  }
+
 
   /* Film grain overlay */
   #method .method-grain {
@@ -2708,99 +2683,13 @@
 
 
 <!-- ══════════════════════════════
-     03 · МЕТОДИКА
-══════════════════════════════ -->
-<section id="method">
-  <div class="method-grain"></div>
-
-  <div class="method-inner">
-
-    <!-- Section eyebrow -->
-    <div class="method-eyebrow reveal">
-      <span class="num">03</span> / МЕТОДИКА
-    </div>
-
-    <!-- Big headline -->
-    <h2 class="method-headline reveal">
-      Я пропоную свою<br>
-      <em>міждисциплінарну</em><br>
-      методику —<br>
-      синтез досвіду та теорії.
-    </h2>
-
-    <!-- Tag pills -->
-    <div class="method-tags reveal">
-      <span class="method-tag">Архетипічна психологія</span>
-      <span class="method-tag">Структури Міфу</span>
-      <span class="method-tag">Ритуальність</span>
-      <span class="method-tag">Арт-фотографія</span>
-      <span class="method-tag">Особистий бренд</span>
-      <span class="method-tag">Досвід ветерана</span>
-    </div>
-
-    <!-- Two method cards -->
-    <div class="method-cards">
-
-      <div class="method-card reveal" style="transition-delay:0.1s">
-        <span class="method-card-num">01</span>
-        <div class="method-card-label">МЕТОД 01</div>
-        <div class="method-card-title">«Репортаж»</div>
-        <div class="method-card-price">від $50 · менше тижня</div>
-        <p class="method-card-desc">
-          Фотодокументалістика та сторітейлінг —
-          обираємо момент, який героїня хоче прожити.
-          Живий, щирий, репортажний. Без постановки —
-          тільки справжній кадр.
-        </p>
-        <a href="#contacts" class="method-card-cta">
-          Дізнатись більше <span class="method-card-cta-arrow">→</span>
-        </a>
-      </div>
-
-      <div class="method-card reveal" style="transition-delay:0.25s">
-        <span class="method-card-num">02</span>
-        <div class="method-card-label">МЕТОД 02</div>
-        <div class="method-card-title">«Міфозйомка»</div>
-        <div class="method-card-price">від $88 · 1–2 тижні</div>
-        <p class="method-card-desc">
-          Міждисциплінарна методика: архетипи Юнга +
-          структура Кемпбелла + ритуал + арт-фото.
-          Трансформаційний досвід. Це не сесія —
-          це подорож усередину себе.
-        </p>
-        <a href="#contacts" class="method-card-cta">
-          Дізнатись більше <span class="method-card-cta-arrow">→</span>
-        </a>
-      </div>
-
-    </div><!-- /.method-cards -->
-
-    <!-- For whom block -->
-    <div class="method-audience reveal">
-      <div class="method-audience-label">
-        — ДЛЯ КОГО
-        <strong>Це підходить<br>не всім.</strong>
-      </div>
-      <ul class="method-audience-list">
-        <li>Жінки у перехідних станах: завершення, початок, зміна ролі, вигорання, пробудження</li>
-        <li>Жінки-ветеранки, творці, підприємниці, коучі, психологи</li>
-        <li>Ті, хто будує глибокий персональний бренд і працює із сенсами</li>
-        <li>Ті, хто шукає не просто «гарне фото», а досвід і трансформацію</li>
-      </ul>
-    </div>
-
-  </div><!-- /.method-inner -->
-</section>
-
-
-<!-- ══════════════════════════════
-     04 · ПОРТФОЛІО
+     03 · ПОРТФОЛІО
 ══════════════════════════════ -->
 <section id="portfolio-scroll">
 
   <!-- Header + filters -->
   <div class="pf-header">
-    <div class="portfolio-eyebrow"><span class="num">04</span> / ПОРТФОЛІО</div>
+    <div class="portfolio-eyebrow"><span class="num">03</span> / ПОРТФОЛІО</div>
 
     <div class="pf-filters">
       <button class="pf-filter-btn active" data-cat="nature">NATURE</button>
@@ -3088,6 +2977,92 @@
   <!-- Dots -->
   <div class="pf-dots" id="pf-dots"></div>
 
+</section>
+
+
+<!-- ══════════════════════════════
+     04 · МЕТОДИКА
+══════════════════════════════ -->
+<section id="method">
+  <div class="method-grain"></div>
+
+  <div class="method-inner">
+
+    <!-- Section eyebrow -->
+    <div class="method-eyebrow reveal">
+      <span class="num">04</span> / МЕТОДИКА
+    </div>
+
+    <!-- Big headline -->
+    <h2 class="method-headline reveal">
+      Я пропоную свою<br>
+      <em>міждисциплінарну</em><br>
+      методику —<br>
+      синтез досвіду та теорії.
+    </h2>
+
+    <!-- Tag pills -->
+    <div class="method-tags reveal">
+      <span class="method-tag">Архетипічна психологія</span>
+      <span class="method-tag">Структури Міфу</span>
+      <span class="method-tag">Ритуальність</span>
+      <span class="method-tag">Арт-фотографія</span>
+      <span class="method-tag">Особистий бренд</span>
+      <span class="method-tag">Досвід ветерана</span>
+    </div>
+
+    <!-- Two method cards -->
+    <div class="method-cards">
+
+      <div class="method-card reveal" style="transition-delay:0.1s">
+        <span class="method-card-num">01</span>
+        <div class="method-card-label">МЕТОД 01</div>
+        <div class="method-card-title">«Репортаж»</div>
+        <div class="method-card-price">від $50 · менше тижня</div>
+        <p class="method-card-desc">
+          Фотодокументалістика та сторітейлінг —
+          обираємо момент, який героїня хоче прожити.
+          Живий, щирий, репортажний. Без постановки —
+          тільки справжній кадр.
+        </p>
+        <a href="#contacts" class="method-card-cta">
+          Дізнатись більше <span class="method-card-cta-arrow">→</span>
+        </a>
+      </div>
+
+      <div class="method-card reveal" style="transition-delay:0.25s">
+        <span class="method-card-num">02</span>
+        <div class="method-card-label">МЕТОД 02</div>
+        <div class="method-card-title">«Міфозйомка»</div>
+        <div class="method-card-price">від $88 · 1–2 тижні</div>
+        <p class="method-card-desc">
+          Міждисциплінарна методика: архетипи Юнга +
+          структура Кемпбелла + ритуал + арт-фото.
+          Трансформаційний досвід. Це не сесія —
+          це подорож усередину себе.
+        </p>
+        <a href="#contacts" class="method-card-cta">
+          Дізнатись більше <span class="method-card-cta-arrow">→</span>
+        </a>
+      </div>
+
+    </div><!-- /.method-cards -->
+
+    <!-- For whom block -->
+    <div class="method-audience reveal">
+      <div class="method-audience-label">
+        — ДЛЯ КОГО
+        <strong>Це підходить<br>не всім.</strong>
+      </div>
+      <ul class="method-audience-list">
+        <li>Жінки у перехідних станах: завершення, початок, зміна ролі, вигорання, пробудження</li>
+        <li>Жінки-ветеранки, творці, підприємниці, коучі, психологи</li>
+        <li>Ті, хто будує глибокий персональний бренд і працює із сенсами</li>
+        <li>Ті, хто шукає не просто «гарне фото», а досвід і трансформацію</li>
+      </ul>
+    </div>
+
+  </div><!-- /.method-inner -->
 </section>
 
 <!-- ══════════════════════════════
